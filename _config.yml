@@ -3,10 +3,9 @@ title: jekyll site
 description: Awesome tutorial jekyll by the Evil Genius
 # baseurl: "/particle" # the subpath of your site, e.g. /blog
 # url: "localhost:3000" # the base hostname & protocol for your site e.g. http://willianjusten.com.br
-
 # User settings
 username: 开泰--Evil Genius
-user_description: “远远看去优美而神秘的人和事，只要拉近了看，就会明白它们原来既不神秘又不优美。”————马塞尔·普鲁斯特。 于千万人之中遇见你所要遇见的人，于千万年之中，时间的无涯的荒野里，没有早一步，也没有晚一步，刚巧赶上了，那也没有别的话可说，惟有轻轻地问一声：“噢，你也在这里吗？” ———— 张爱玲
+user_description:
 user_title: Software Developer
 email: huangpuyuan@outlook.com
 twitter_username: huangpuyuan
