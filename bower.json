@@ -1,0 +1,20 @@
+{
+  "name": "blog",
+  "description": "mybolg",
+  "main": "index.js",
+  "authors": [
+    "huangpuyuan"
+  ],
+  "license": "ISC",
+  "keywords": [
+    "blog"
+  ],
+  "homepage": "https://github.com/huangpuyuan/huangpuyuan.github.io",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
