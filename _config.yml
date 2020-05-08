@@ -1,10 +1,10 @@
 # Site settings
 title: 黄浦渊的个人主页
-description: Awesome tutorial jekyll by the Evil Genius
+description: Awesome tutorial jekyll by kaitai
 #baseurl: "/particle" # the subpath of your site, e.g. /blog
 url: "www.huangpuyuan.cn" # the base hostname & protocol for your site e.g. http://willianjusten.com.br
 # User settings
-username: 开泰 Evil Genius
+username: 开泰
 user_description:
 user_title: Software Developer
 email: huangpuyuan@outlook.com
