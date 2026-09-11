@@ -1,0 +1,73 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import '../styles/global.css';
+import 'katex/dist/katex.min.css';
+import { site } from '../config';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import SearchPalette from '../components/SearchPalette.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  type?: 'website' | 'article';
+}
+
+const { title, description = site.tagline, type = 'website' } = Astro.props;
+
+const fullTitle = title ? `${title} · ${site.title}` : `${site.name} · ${site.nameZh}`;
+const canonical = new URL(Astro.url.pathname, site.url).href;
+const socialImage = new URL(site.ogImage, site.url).href;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content={site.name} />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="alternate" type="application/rss+xml" title={`${site.name} · 笔记`} href="/rss.xml" />
+
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:locale" content="zh_CN" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#07090d" media="(prefers-color-scheme: dark)" />
+
+    <script is:inline>
+      (function () {
+        if (window.__stormThemeInit) return;
+        window.__stormThemeInit = true;
+        try {
+          var t = localStorage.getItem('theme');
+          if (t === 'dark' || t === 'light') {
+            document.documentElement.setAttribute('data-theme', t);
+          }
+        } catch (e) {}
+      })();
+    </script>
+
+    <ClientRouter />
+  </head>
+
+  <body>
+    <Nav />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+    <SearchPalette transition:persist />
+  </body>
+</html>

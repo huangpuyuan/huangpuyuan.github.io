@@ -1,0 +1,398 @@
+---
+import { existsSync, statSync } from 'node:fs';
+import path from 'node:path';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { frontendProjects, frontendGroups, frontendNotes, frontendDocs } from '../../data/frontend';
+import type { LabLink } from '../../data/frontend';
+
+// 本地练习的真实目录（源码里的 public，不是构建产物）
+const ROOT = path.join(process.cwd(), 'public', 'lab', 'frontend');
+
+/** 把清单里的相对路径解析成可点开的地址 */
+function hrefOf(to: string): string {
+  if (/^https?:/i.test(to) || to.startsWith('/')) return encodeURI(to);
+  return encodeURI('/lab/frontend/' + to);
+}
+
+/**
+ * 核对本地文件是否存在。
+ * 目录要能找到 index.html 才算数，找不到的半成品页面不拿出来。
+ * 站内绝对路径（指向 Astro 生成的页面）和站外链接不做检查。
+ */
+function resolvable(to: string): boolean {
+  if (/^https?:/i.test(to) || to.startsWith('/')) return true;
+  const full = path.join(ROOT, ...to.split('/'));
+  try {
+    if (statSync(full).isDirectory()) {
+      return existsSync(path.join(full, 'index.html'));
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const missing: string[] = [];
+
+/** 过滤掉文件不存在的条目，顺便记下来好提示 */
+function keep(items: LabLink[]): (LabLink & { href: string })[] {
+  const out: (LabLink & { href: string })[] = [];
+  for (const it of items) {
+    if (resolvable(it.to)) {
+      out.push({ ...it, href: hrefOf(it.to) });
+    } else {
+      missing.push(it.to);
+    }
+  }
+  return out;
+}
+
+const projects = keep(frontendProjects);
+const notes = keep(frontendNotes);
+const docs = keep(frontendDocs);
+const groups = frontendGroups
+  .map((g) => ({ ...g, items: keep(g.items) }))
+  .filter((g) => g.items.length > 0);
+
+const localCount = groups.reduce((n, g) => n + g.items.length, 0);
+const externalCount = projects.filter((p) => /^https?:/i.test(p.to)).length;
+
+if (missing.length) {
+  console.warn('\n[frontend] 以下条目在 public/lab/frontend 下找不到，已跳过：');
+  for (const m of missing) console.warn('  · ' + m);
+  console.warn('');
+}
+---
+
+<BaseLayout
+  title="前端练习集"
+  description="2016 到 2017 年学前端时攒下的练习和作业，源码原样保留，换成了现在的排版。"
+>
+  <div class="wrap page-head">
+    <span class="eyebrow">LAB / FRONTEND</span>
+    <h1>前端练习集</h1>
+    <p class="muted">
+      2016 到 2017 年学前端时攒下的东西，{localCount} 个页面 + {externalCount} 个独立项目，都是自己写的。
+      页面本身没动过，只把当年依赖的外部 CDN 换成了本地文件——那些服务现在基本都关停了。
+    </p>
+    <p class="muted">
+      少数页面是当年的半成品，能打开就算成功。也有一两条链接是原作者（也就是我）当年就没写完的，
+      留着当个纪念。
+    </p>
+  </div>
+
+  <div class="wrap" style="padding-bottom:96px">
+    {/* ---------- 独立项目 ---------- */}
+    <section class="block">
+      <h2 class="block__title">独立项目</h2>
+      <p class="block__note">这几条指向站外，或者站内其它页面。</p>
+      <ul class="cards">
+        {
+          projects.map((p) => {
+            const ext = /^https?:/i.test(p.to);
+            return (
+              <li>
+                <a class="card item" href={p.href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener' : undefined}>
+                  <h3>
+                    {p.title}
+                    <svg class="item__arrow" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+                      <path d="M5 11L11 5M6 5h5v5"></path>
+                    </svg>
+                  </h3>
+                  {p.note && <p>{p.note}</p>}
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </section>
+
+    {/* ---------- 本地练习 ---------- */}
+    {
+      groups.map((g) => (
+        <section class="block">
+          <div class="block__head">
+            <h2 class="block__title">{g.name}</h2>
+            <span class="block__count">{g.items.length}</span>
+          </div>
+          {g.note && <p class="block__note">{g.note}</p>}
+
+          {g.layout === 'compact' ? (
+            <ul class="mini">
+              {g.items.map((it) => (
+                <li>
+                  <a href={it.href}>
+                    <span>{it.title}</span>
+                    <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+                      <path d="M5 11L11 5M6 5h5v5"></path>
+                    </svg>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <ul class="rows">
+              {g.items.map((it) => (
+                <li>
+                  <a class="row" href={it.href}>
+                    <span class="row__title">{it.title}</span>
+                    {it.note && <span class="row__note">{it.note}</span>}
+                    <svg class="row__arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+                      <path d="M5 11L11 5M6 5h5v5"></path>
+                    </svg>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ))
+    }
+
+    {/* ---------- 笔记 ---------- */}
+    <section class="block">
+      <div class="block__head">
+        <h2 class="block__title">写过的笔记</h2>
+        <span class="block__count">{notes.length + docs.length}</span>
+      </div>
+      <p class="block__note">当年写在 GitHub issue 里的，那会儿把它当博客用。</p>
+      <ul class="rows">
+        {
+          [...notes, ...docs].map((n) => {
+            const ext = /^https?:/i.test(n.to);
+            return (
+              <li>
+                <a class="row" href={n.href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener' : undefined}>
+                  <span class="row__title">{n.title}</span>
+                  {n.note && <span class="row__note">{n.note}</span>}
+                  <svg class="row__arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+                    <path d="M5 11L11 5M6 5h5v5"></path>
+                  </svg>
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .page-head {
+    padding-block: 64px 20px;
+  }
+
+  .page-head h1 {
+    font-size: clamp(2.1rem, 6vw, 2.8rem);
+    margin: 0 0 12px;
+    letter-spacing: -0.035em;
+  }
+
+  .page-head p {
+    margin: 0 0 10px;
+    max-width: 46em;
+    font-size: 0.95rem;
+    line-height: 1.85;
+  }
+
+  /* ---------- 分组 ---------- */
+  .block + .block {
+    margin-top: 52px;
+    padding-top: 44px;
+    border-top: 1px solid var(--line);
+  }
+
+  .block__head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .block__title {
+    margin: 0;
+    font-size: 1.2rem;
+    letter-spacing: -0.02em;
+  }
+
+  .block__count {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--fg-faint);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 9px;
+  }
+
+  .block__note {
+    margin: 8px 0 22px;
+    max-width: 46em;
+    font-size: 0.87rem;
+    line-height: 1.8;
+    color: var(--fg-muted);
+  }
+
+  /* ---------- 独立项目卡片 ---------- */
+  .cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
+  }
+
+  .item {
+    display: block;
+    padding: 20px 22px;
+    color: var(--fg);
+  }
+
+  .item h3 {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0 0 6px;
+    font-size: 1rem;
+    transition: color 0.18s ease;
+  }
+
+  .item__arrow {
+    flex-shrink: 0;
+    color: var(--fg-faint);
+    transition: color 0.18s ease, transform 0.18s ease;
+  }
+
+  .item:hover h3 {
+    color: var(--accent);
+  }
+
+  .item:hover .item__arrow {
+    color: var(--accent);
+    transform: translate(2px, -2px);
+  }
+
+  .item p {
+    margin: 0;
+    font-size: 0.86rem;
+    line-height: 1.72;
+    color: var(--fg-muted);
+  }
+
+  /* ---------- 带说明的列表 ---------- */
+  .rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .rows li + li {
+    border-top: 1px solid var(--line);
+  }
+
+  .row {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 13px 12px;
+    margin-inline: -12px;
+    border-radius: var(--radius-sm);
+    color: var(--fg);
+    transition: background-color 0.18s ease;
+  }
+
+  .row:hover {
+    background: var(--bg-sunken);
+  }
+
+  .row__title {
+    flex-shrink: 0;
+    font-size: 0.94rem;
+    transition: color 0.18s ease;
+  }
+
+  .row:hover .row__title {
+    color: var(--accent);
+  }
+
+  .row__note {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.82rem;
+    color: var(--fg-faint);
+  }
+
+  .row__arrow {
+    flex-shrink: 0;
+    align-self: center;
+    color: var(--fg-faint);
+    transition: color 0.18s ease, transform 0.18s ease;
+  }
+
+  .row:hover .row__arrow {
+    color: var(--accent);
+    transform: translate(2px, -2px);
+  }
+
+  /* ---------- 紧凑网格 ---------- */
+  .mini {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  .mini a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 12px;
+    margin-inline: -12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.87rem;
+    line-height: 1.45;
+    color: var(--fg-muted);
+    transition: all 0.16s ease;
+  }
+
+  .mini a svg {
+    flex-shrink: 0;
+    color: var(--fg-faint);
+    opacity: 0;
+    transition: all 0.16s ease;
+  }
+
+  .mini a:hover {
+    background: var(--bg-sunken);
+    color: var(--accent);
+  }
+
+  .mini a:hover svg {
+    opacity: 1;
+    color: var(--accent);
+  }
+
+  @media (min-width: 640px) {
+    .cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .mini {
+      grid-template-columns: repeat(2, 1fr);
+      column-gap: 32px;
+    }
+  }
+
+  @media (min-width: 1000px) {
+    .mini {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .row__note {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>多重边框</title>
+    <style>
+    body{
+    }
+    div {
+    	display:block;
+        margin: 5em;
+        width: 10em;
+        height: 8em;
+        background: yellowgreen;
+    }
+    
+    .muti {        
+        box-shadow: 0 0 0 10px #655, 0 0 0 20px deeppink;
+    }
+    
+    .outline {
+    	border:10px solid #655;
+    	outline: 10px solid deeppink;
+    }
+    </style>
+</head>
+
+<body>
+    <div class="muti"></div>
+    <div class="outline"></div>
+<!-- data-lab-backlink -->
+<a data-lab-backlink href="../../" title="返回前端练习集" style="position:fixed;left:16px;bottom:16px;z-index:2147483647;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:rgba(15,20,28,.82);color:#fff;font:500 13px/1 ui-sans-serif,-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)">← 前端练习集</a>
+</body>
+
+</html>

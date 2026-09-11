@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>location方法</title>
+</head>
+
+<body>
+    <input type="button" value="操作页面" id="ck">
+    <script type="text/javascript">
+    var btn = document.getElementById("ck");
+    btn.onclick = function() {
+        var result = confirm("刷新页面吗？");
+        if (result) {
+            location.reload(true);
+        } else {
+            location.replace("http://www.imooc.com");
+        }
+    }
+    console.log(history);
+    </script>
+<!-- data-lab-backlink -->
+<a data-lab-backlink href="../../" title="返回前端练习集" style="position:fixed;left:16px;bottom:16px;z-index:2147483647;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:rgba(15,20,28,.82);color:#fff;font:500 13px/1 ui-sans-serif,-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)">← 前端练习集</a>
+</body>
+
+</html>

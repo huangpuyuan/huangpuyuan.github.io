@@ -1,21 +1,21 @@
 {
-  "name": "particle",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "storm-site",
+  "type": "module",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Storm · 开泰的个人主页 · 笔记 / 作品 / 读诗",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
   },
-  "author": "Nathan Randecker",
-  "license": "ISC",
   "dependencies": {
-    "browser-sync": "*",
-    "gulp": "*",
-    "gulp-concat": "*",
-    "gulp-csso": "*",
-    "gulp-imagemin": "*",
-    "gulp-plumber": "*",
-    "gulp-sass": "*",
-    "gulp-uglify": "*"
+    "@astrojs/rss": "^4.0.12",
+    "@astrojs/sitemap": "^3.6.0",
+    "astro": "^5.14.1",
+    "katex": "^0.18.7",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0"
   }
 }

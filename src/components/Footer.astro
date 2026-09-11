@@ -1,0 +1,96 @@
+---
+import { site, contacts } from '../config';
+const year = new Date().getFullYear();
+---
+
+<footer class="footer">
+  <div class="wrap footer__inner">
+    <div class="footer__left">
+      <p class="footer__copy">
+        <span class="footer__brand">{site.name}</span>
+        <span class="footer__sep">/</span>
+        <span>{site.nameZh}</span>
+        <span class="footer__year">© {year}</span>
+      </p>
+      <p class="footer__note">
+        用 <a href="https://astro.build" target="_blank" rel="noopener">Astro</a> 构建，托管在 GitHub
+        Pages，没有服务器。
+      </p>
+    </div>
+    <nav class="footer__links" aria-label="联系方式">
+      {contacts.map((c) => <a href={c.href} target="_blank" rel="noopener">{c.label}</a>)}
+      <a href="/rss.xml">RSS</a>
+    </nav>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    border-top: 1px solid var(--line);
+    margin-top: 40px;
+    padding-block: 44px;
+  }
+
+  .footer__inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .footer__copy {
+    margin: 0;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    flex-wrap: wrap;
+  }
+
+  .footer__brand {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .footer__sep {
+    color: var(--fg-faint);
+  }
+
+  .footer__year {
+    color: var(--fg-faint);
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+  }
+
+  .footer__note {
+    margin: 6px 0 0;
+    font-size: 0.78rem;
+    color: var(--fg-faint);
+  }
+
+  .footer__note a {
+    color: var(--fg-faint);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .footer__note a:hover {
+    color: var(--accent);
+  }
+
+  .footer__links {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+
+  .footer__links a {
+    font-size: 0.82rem;
+    color: var(--fg-muted);
+  }
+
+  .footer__links a:hover {
+    color: var(--accent);
+  }
+</style>

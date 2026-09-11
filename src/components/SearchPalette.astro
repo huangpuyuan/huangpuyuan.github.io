@@ -1,0 +1,408 @@
+---
+// ⌘K 命令面板式搜索
+// 索引由 /search.json 在构建时生成，运行时只做本地匹配，不请求任何第三方服务
+---
+
+<div class="palette" data-palette hidden>
+  <div class="palette__mask" data-palette-close></div>
+  <div class="palette__panel" role="dialog" aria-modal="true" aria-label="站内搜索">
+    <div class="palette__head">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="6.5"></circle>
+        <path d="m16 16 4.5 4.5"></path>
+      </svg>
+      <input
+        class="palette__input"
+        type="search"
+        placeholder="搜索笔记…"
+        autocomplete="off"
+        spellcheck="false"
+        aria-label="搜索关键词"
+      />
+      <button class="palette__esc" type="button" data-palette-close>ESC</button>
+    </div>
+
+    <div class="palette__body" data-palette-body>
+      <p class="palette__hint" data-palette-hint>输入关键词，搜索全部笔记</p>
+      <ul class="palette__list" data-palette-list></ul>
+    </div>
+
+    <div class="palette__foot">
+      <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+      <span><kbd>↵</kbd> 打开</span>
+      <span><kbd>esc</kbd> 关闭</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  type Entry = {
+    slug: string;
+    title: string;
+    date: string;
+    category: string;
+    summary: string;
+    text: string;
+  };
+
+  let cache: Entry[] | null = null;
+  let loading: Promise<Entry[]> | null = null;
+
+  function loadIndex(): Promise<Entry[]> {
+    if (cache) return Promise.resolve(cache);
+    if (!loading) {
+      loading = fetch('/search.json')
+        .then((r) => r.json())
+        .then((d: Entry[]) => {
+          cache = d;
+          return d;
+        })
+        .catch(() => {
+          cache = [];
+          return [];
+        });
+    }
+    return loading;
+  }
+
+  function snippet(text: string, q: string) {
+    const i = text.toLowerCase().indexOf(q);
+    if (i < 0) return text.slice(0, 70);
+    const start = Math.max(0, i - 26);
+    const end = Math.min(text.length, i + q.length + 46);
+    return (start > 0 ? '…' : '') + text.slice(start, end) + (end < text.length ? '…' : '');
+  }
+
+  function score(e: Entry, q: string) {
+    const t = e.title.toLowerCase();
+    const c = (e.category || '').toLowerCase();
+    const s = (e.summary || '').toLowerCase();
+    const b = e.text.toLowerCase();
+    let sc = 0;
+    if (t === q) sc += 200;
+    if (t.includes(q)) sc += 90;
+    if (c.includes(q)) sc += 34;
+    if (s.includes(q)) sc += 22;
+    if (b.includes(q)) sc += 8;
+    return sc;
+  }
+
+  function initPalette() {
+    const root = document.querySelector<HTMLElement>('[data-palette]');
+    if (!root || root.dataset.ready === '1') return;
+    root.dataset.ready = '1';
+
+    const input = root.querySelector<HTMLInputElement>('.palette__input')!;
+    const list = root.querySelector<HTMLUListElement>('[data-palette-list]')!;
+    const hint = root.querySelector<HTMLElement>('[data-palette-hint]')!;
+    let active = -1;
+    let results: Entry[] = [];
+
+    function open() {
+      root!.hidden = false;
+      document.documentElement.style.overflow = 'hidden';
+      input.value = '';
+      render('');
+      requestAnimationFrame(() => input.focus());
+      loadIndex();
+    }
+
+    function close() {
+      root!.hidden = true;
+      document.documentElement.style.overflow = '';
+      active = -1;
+    }
+
+    function render(q: string) {
+      const query = q.trim().toLowerCase();
+      list.innerHTML = '';
+
+      if (!query) {
+        hint.textContent = '输入关键词，搜索全部笔记';
+        hint.hidden = false;
+        results = [];
+        return;
+      }
+
+      const entries = cache ?? [];
+      results = entries
+        .map((e) => ({ e, s: score(e, query) }))
+        .filter((x) => x.s > 0)
+        .sort((a, b) => b.s - a.s || (a.e.date < b.e.date ? 1 : -1))
+        .slice(0, 8)
+        .map((x) => x.e);
+
+      if (!results.length) {
+        hint.textContent = cache ? `没有找到「${q.trim()}」` : '正在载入索引…';
+        hint.hidden = false;
+        return;
+      }
+
+      hint.hidden = true;
+      const frag = document.createDocumentFragment();
+      results.forEach((e, i) => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.className = 'palette__item';
+        a.href = `/blog/${e.slug}/`;
+        a.dataset.index = String(i);
+        a.innerHTML =
+          `<div class="palette__row">` +
+          `<span class="palette__title">${escapeHtml(e.title)}</span>` +
+          `<span class="palette__meta">${escapeHtml(e.category || '随笔')} · ${e.date.slice(0, 7)}</span>` +
+          `</div>` +
+          `<p class="palette__snip">${escapeHtml(snippet(e.summary || e.text, query))}</p>`;
+        li.appendChild(a);
+        frag.appendChild(li);
+      });
+      list.appendChild(frag);
+      setActive(0);
+    }
+
+    function setActive(i: number) {
+      const items = list.querySelectorAll<HTMLAnchorElement>('.palette__item');
+      if (!items.length) return;
+      active = (i + items.length) % items.length;
+      items.forEach((el, idx) => el.classList.toggle('is-active', idx === active));
+      items[active].scrollIntoView({ block: 'nearest' });
+    }
+
+    function escapeHtml(s: string) {
+      return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+    }
+
+    let timer: number | undefined;
+    input.addEventListener('input', () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => render(input.value), 90);
+    });
+
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'ArrowDown') {
+        ev.preventDefault();
+        setActive(active + 1);
+      } else if (ev.key === 'ArrowUp') {
+        ev.preventDefault();
+        setActive(active - 1);
+      } else if (ev.key === 'Enter') {
+        const el = list.querySelectorAll<HTMLAnchorElement>('.palette__item')[active];
+        if (el) el.click();
+        close();
+      }
+    });
+
+    root.addEventListener('click', (ev) => {
+      const el = ev.target as HTMLElement;
+      if (el.closest('[data-palette-close]')) close();
+      if (el.closest('.palette__item')) window.setTimeout(close, 60);
+    });
+
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && !root!.hidden) {
+        close();
+        return;
+      }
+      const k = ev.key.toLowerCase();
+      if ((ev.metaKey || ev.ctrlKey) && k === 'k') {
+        ev.preventDefault();
+        root!.hidden ? open() : close();
+        return;
+      }
+      if (k === '/' && root!.hidden) {
+        const tag = (ev.target as HTMLElement)?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        ev.preventDefault();
+        open();
+      }
+    });
+
+    document.addEventListener('click', (ev) => {
+      if ((ev.target as HTMLElement).closest('[data-search-open]')) {
+        ev.preventDefault();
+        open();
+      }
+    });
+
+    window.addEventListener('astro:after-swap', () => {
+      if (!root!.hidden) close();
+    });
+  }
+
+  function boot() {
+    initPalette();
+    loadIndex();
+  }
+
+  document.addEventListener('astro:page-load', boot);
+  boot();
+</script>
+
+<style>
+  .palette {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 12vh 16px 16px;
+  }
+
+  .palette[hidden] {
+    display: none;
+  }
+
+  .palette__mask {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--fg) 42%, transparent);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    animation: fade 0.16s ease;
+  }
+
+  .palette__panel {
+    position: relative;
+    width: 100%;
+    max-width: 620px;
+    background: var(--bg-elev);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lift);
+    overflow: hidden;
+    animation: pop 0.18s cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.985);
+    }
+  }
+
+  .palette__head {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    color: var(--fg-faint);
+  }
+
+  .palette__input {
+    flex: 1;
+    border: 0;
+    background: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 1rem;
+    color: var(--fg);
+    padding: 2px 0;
+  }
+
+  .palette__input::placeholder {
+    color: var(--fg-faint);
+  }
+
+  .palette__esc {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: var(--fg-faint);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: var(--bg-sunken);
+    padding: 2px 7px;
+    cursor: pointer;
+  }
+
+  .palette__body {
+    max-height: min(52vh, 420px);
+    overflow-y: auto;
+  }
+
+  .palette__hint {
+    margin: 0;
+    padding: 26px 18px;
+    text-align: center;
+    font-size: 0.87rem;
+    color: var(--fg-faint);
+  }
+
+  .palette__list {
+    list-style: none;
+    margin: 0;
+    padding: 6px;
+  }
+
+  /* 搜索结果项是 JS 运行时生成的，拿不到 Astro 的作用域属性，
+     必须走 :global()，否则「标题 / 分类 / 摘要」会挤成一团。
+     统一挂在 .palette__list 下面，不会外泄。 */
+  .palette__list :global(.palette__item) {
+    display: block;
+    padding: 11px 12px;
+    border-radius: var(--radius);
+    color: var(--fg);
+  }
+
+  .palette__list :global(.palette__item.is-active) {
+    background: var(--accent-soft);
+  }
+
+  .palette__list :global(.palette__row) {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .palette__list :global(.palette__title) {
+    font-size: 0.95rem;
+    font-weight: 550;
+  }
+
+  .palette__list :global(.palette__meta) {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--fg-faint);
+    white-space: nowrap;
+  }
+
+  .palette__list :global(.palette__snip) {
+    margin: 4px 0 0;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--fg-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .palette__foot {
+    display: flex;
+    gap: 18px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--line);
+    background: var(--bg-sunken);
+    font-size: 0.72rem;
+    color: var(--fg-faint);
+  }
+
+  .palette__foot kbd {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    background: var(--bg-elev);
+    padding: 0 4px;
+    margin-right: 3px;
+  }
+</style>

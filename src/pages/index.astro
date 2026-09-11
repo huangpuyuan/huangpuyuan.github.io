@@ -1,0 +1,602 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ParticleField from '../components/ParticleField.astro';
+import { site, contacts, works, earlyNotes, poems, loves } from '../config';
+import { formatDate, postUrl, readingTime } from '../utils/format';
+
+const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+const latest = posts.slice(0, 6);
+
+const firstYear = Math.min(...posts.map((p) => p.data.date.getFullYear()));
+
+const stats = [
+  { value: String(posts.length), label: '篇笔记' },
+  { value: String(works.length), label: '个作品' },
+  { value: `${firstYear}`, label: '年写到现在' }
+];
+---
+
+<BaseLayout>
+  {/* ============ Hero ============ */}
+  <section class="hero">
+    <ParticleField />
+    <div class="wrap hero__inner">
+      <p class="hero__eyebrow">{site.role}</p>
+      <h1 class="hero__name">
+        {site.name}<span class="hero__dot">.</span>
+      </h1>
+      <p class="hero__zh">{site.nameZh}</p>
+      <p class="hero__tagline">{site.tagline}</p>
+
+      <div class="hero__actions">
+        <a class="btn btn--solid" href="/blog/">
+          翻笔记
+          <svg class="arrow" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+            <path d="M3 8h10M9 4l4 4-4 4"></path>
+          </svg>
+        </a>
+        <button class="btn" type="button" data-search-open>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5"></circle>
+            <path d="m16 16 4.5 4.5"></path>
+          </svg>
+          搜索
+        </button>
+      </div>
+
+      <nav class="hero__contacts" aria-label="联系方式">
+        {contacts.map((c) => <a href={c.href} target="_blank" rel="noopener">{c.label}</a>)}
+      </nav>
+
+      <dl class="hero__stats">
+        {
+          stats.map((s) => (
+            <div>
+              <dt>{s.label}</dt>
+              <dd>{s.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+    <div class="hero__scroll" aria-hidden="true"><span></span></div>
+  </section>
+
+  {/* ============ 笔记 ============ */}
+  <section class="section" id="notes">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">NOTES</span>
+          <h2>我的笔记</h2>
+        </div>
+        <a class="more-link" href="/blog/">
+          全部 {posts.length} 篇
+          <svg class="arrow" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+            <path d="M3 8h10M9 4l4 4-4 4"></path>
+          </svg>
+        </a>
+      </div>
+
+      <div class="grid grid--3">
+        {
+          latest.map((post) => (
+            <a class="card post-card" href={postUrl(post.id)}>
+              <div class="post-card__meta">
+                <span class="tag">{post.data.category ?? '随笔'}</span>
+                <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+              </div>
+              <h3>{post.data.title}</h3>
+              <p>{post.data.summary}</p>
+              <span class="post-card__time">{readingTime(post.body ?? '')}</span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  {/* ============ 作品 ============ */}
+  <section class="section section--alt" id="works">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">WORKS</span>
+          <h2>写过的东西</h2>
+        </div>
+        <a class="more-link" href="/lab/">
+          去实验室
+          <svg class="arrow" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+            <path d="M3 8h10M9 4l4 4-4 4"></path>
+          </svg>
+        </a>
+      </div>
+
+      <div class="grid grid--2">
+        {
+          works.map((w) => {
+            const internal = w.href.startsWith('/');
+            return (
+              <a
+                class="card work-card"
+                href={w.href}
+                target={internal ? undefined : '_blank'}
+                rel={internal ? undefined : 'noopener'}
+              >
+                <div class="work-card__top">
+                  <span class="tag">{w.tag}</span>
+                  <span class="work-card__year">{w.year}</span>
+                </div>
+                <h3>
+                  {w.title}
+                  <svg class="work-card__arrow" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+                    <path d="M5 11L11 5M6 5h5v5"></path>
+                  </svg>
+                </h3>
+                <p>{w.desc}</p>
+              </a>
+            );
+          })
+        }
+      </div>
+
+      <div class="early">
+        <p class="early__label">早期的一些练习</p>
+        <ul>
+          {earlyNotes.map((n) => <li><a href={n.href} target="_blank" rel="noopener">{n.title}</a></li>)}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  {/* ============ 读诗 ============ */}
+  <section class="section" id="poems">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">POEMS</span>
+          <h2>让灵魂片刻自由</h2>
+        </div>
+      </div>
+
+      <div class="poems">
+        <p class="poems__intro">诗中有画，画中有诗，闲来无事喜欢读诗。</p>
+        <ul class="poems__list">
+          {
+            poems.map((p) => (
+              <li>
+                <span class="poems__title">{p.title}</span>
+                <span class="poems__author">{p.author}</span>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="poems__note">
+          这些是当年在「为你读诗」里读过的篇目。那个小程序已经不再对外开放分享，音频我还没搬过来。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {/* ============ 关于 ============ */}
+  <section class="section section--alt" id="about">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">ABOUT</span>
+          <h2>关于我</h2>
+        </div>
+        <a class="more-link" href="/about/">
+          详细一点
+          <svg class="arrow" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+            <path d="M3 8h10M9 4l4 4-4 4"></path>
+          </svg>
+        </a>
+      </div>
+
+      <div class="about">
+        <div class="about__main">
+          <p>
+            白天写代码，晚上看点杂书。喜欢的东西挺杂的：设计、古典乐、电影、诗、哲学、乒乓球、科幻、电子游戏。
+          </p>
+          <p>
+            这几年一直在做数据和 AI 相关的事，把研究过程里的想法随手记在
+            <a href="/blog/">笔记</a> 里，写得不算系统，但都是自己踩过的。
+          </p>
+        </div>
+        <div class="about__side">
+          <p class="about__label">喜欢</p>
+          <ul class="loves">
+            {loves.map((l) => <li>{l}</li>)}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative;
+    min-height: min(82vh, 680px);
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    border-bottom: 1px solid var(--line);
+    background:
+      radial-gradient(1100px 520px at 8% -20%, var(--accent-soft), transparent 60%),
+      radial-gradient(700px 380px at 96% 8%, color-mix(in srgb, var(--ember) 8%, transparent), transparent 62%),
+      var(--bg);
+  }
+
+  .hero__inner {
+    position: relative;
+    z-index: 1;
+    padding-block: 104px 96px;
+  }
+
+  .hero__eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.71rem;
+    letter-spacing: 0.24em;
+    color: var(--fg-faint);
+    margin: 0 0 22px;
+  }
+
+  .hero__name {
+    font-size: clamp(3.4rem, 11vw, 6.2rem);
+    line-height: 0.96;
+    font-weight: 750;
+    letter-spacing: -0.045em;
+    margin: 0;
+  }
+
+  .hero__dot {
+    color: var(--ember);
+  }
+
+  .hero__zh {
+    margin: 16px 0 0;
+    font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+    color: var(--fg-muted);
+    letter-spacing: 0.42em;
+  }
+
+  .hero__tagline {
+    margin: 30px 0 0;
+    max-width: 32em;
+    font-size: 1.05rem;
+    color: var(--fg-muted);
+    line-height: 1.85;
+  }
+
+  .hero__actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 34px;
+  }
+
+  .hero__contacts {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-top: 34px;
+    padding-top: 26px;
+    border-top: 1px solid var(--line);
+    max-width: 34em;
+  }
+
+  .hero__contacts a {
+    font-size: 0.85rem;
+    color: var(--fg-muted);
+  }
+
+  .hero__contacts a:hover {
+    color: var(--accent);
+  }
+
+  .hero__stats {
+    display: flex;
+    gap: 40px;
+    margin: 28px 0 0;
+    flex-wrap: wrap;
+  }
+
+  .hero__stats > div {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .hero__stats dt {
+    font-size: 0.74rem;
+    color: var(--fg-faint);
+    letter-spacing: 0.04em;
+  }
+
+  .hero__stats dd {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hero__scroll {
+    position: absolute;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 32px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    display: grid;
+    place-items: start center;
+    padding-top: 6px;
+    z-index: 1;
+  }
+
+  .hero__scroll span {
+    width: 3px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--fg-faint);
+    animation: scrolldot 1.9s ease-in-out infinite;
+  }
+
+  @keyframes scrolldot {
+    0%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.35;
+    }
+    50% {
+      transform: translateY(9px);
+      opacity: 1;
+    }
+  }
+
+  /* ---------- 笔记卡片 ---------- */
+  .post-card {
+    display: flex;
+    flex-direction: column;
+    padding: 22px;
+    color: var(--fg);
+  }
+
+  .post-card__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .post-card__meta time {
+    font-family: var(--font-mono);
+    font-size: 0.71rem;
+    color: var(--fg-faint);
+  }
+
+  .post-card h3 {
+    font-size: 1.04rem;
+    margin: 0 0 8px;
+    line-height: 1.5;
+    transition: color 0.18s ease;
+  }
+
+  .post-card:hover h3 {
+    color: var(--accent);
+  }
+
+  .post-card p {
+    margin: 0;
+    font-size: 0.87rem;
+    line-height: 1.7;
+    color: var(--fg-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .post-card__time {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--fg-faint);
+  }
+
+  /* ---------- 作品卡片 ---------- */
+  .work-card {
+    padding: 24px;
+    color: var(--fg);
+    display: block;
+  }
+
+  .work-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .work-card__year {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--fg-faint);
+  }
+
+  .work-card h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 8px;
+    font-size: 1.06rem;
+    transition: color 0.18s ease;
+  }
+
+  .work-card__arrow {
+    color: var(--fg-faint);
+    transition: color 0.2s ease, transform 0.2s ease;
+  }
+
+  .work-card:hover h3 {
+    color: var(--accent);
+  }
+
+  .work-card:hover .work-card__arrow {
+    color: var(--accent);
+    transform: translate(2px, -2px);
+  }
+
+  .work-card p {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.72;
+    color: var(--fg-muted);
+  }
+
+  .early {
+    margin-top: 32px;
+    padding-top: 26px;
+    border-top: 1px dashed var(--line-strong);
+  }
+
+  .early__label {
+    font-family: var(--font-mono);
+    font-size: 0.71rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    margin: 0 0 12px;
+  }
+
+  .early ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 26px;
+  }
+
+  .early a {
+    font-size: 0.9rem;
+    color: var(--fg-muted);
+    border-bottom: 1px solid transparent;
+  }
+
+  .early a:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ---------- 读诗 ---------- */
+  .poems {
+    max-width: 640px;
+  }
+
+  .poems__intro {
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    color: var(--fg-muted);
+    margin: 0 0 28px;
+    letter-spacing: 0.04em;
+  }
+
+  .poems__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .poems__list li {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .poems__title {
+    font-family: var(--font-serif);
+    font-size: 1.18rem;
+    color: var(--fg);
+    letter-spacing: 0.04em;
+  }
+
+  .poems__author {
+    font-size: 0.82rem;
+    color: var(--fg-faint);
+    white-space: nowrap;
+  }
+
+  .poems__note {
+    margin: 22px 0 0;
+    font-size: 0.82rem;
+    color: var(--fg-faint);
+    line-height: 1.8;
+  }
+
+  /* ---------- 关于 ---------- */
+  .about {
+    display: grid;
+    gap: 40px;
+  }
+
+  .about__main p {
+    margin: 0 0 16px;
+    font-size: 0.98rem;
+    line-height: 1.95;
+    color: var(--fg-muted);
+    max-width: 42em;
+  }
+
+  .about__main a {
+    border-bottom: 1px solid var(--line-strong);
+  }
+
+  .about__label {
+    font-family: var(--font-mono);
+    font-size: 0.71rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    margin: 0 0 12px;
+  }
+
+  .loves {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .loves li {
+    font-size: 0.82rem;
+    color: var(--fg-muted);
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px 13px;
+  }
+
+  @media (min-width: 880px) {
+    .about {
+      grid-template-columns: 1.6fr 1fr;
+      gap: 56px;
+    }
+  }
+</style>

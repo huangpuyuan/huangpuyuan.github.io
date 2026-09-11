@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>猜数字</title>
+</head>
+<body>
+	<script>
+
+	do{
+		var Num=prompt('请输入您的数字(1到10)');
+
+		console.log(Num);
+		if(Num>5&&Num<=10){
+			alert('猜大了');
+		}else if(Num>0&&Num<5){
+			alert('猜小了');
+		}else if(Num==5){
+			alert('恭喜你猜对了');
+			break;
+		}else if(Num===null){
+			break;
+		}
+		else{
+			alert('输入数字有误请输入(1到10)，请重新猜一下');
+		}
+    }while(Num!=5)
+		document.write('<h1>游戏结束</h1>');		
+	</script>
+<!-- data-lab-backlink -->
+<a data-lab-backlink href="../" title="返回前端练习集" style="position:fixed;left:16px;bottom:16px;z-index:2147483647;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:rgba(15,20,28,.82);color:#fff;font:500 13px/1 ui-sans-serif,-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)">← 前端练习集</a>
+</body>
+</html>

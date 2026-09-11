@@ -1,5 +1,16 @@
-_site
-.sass-cache
-.idea
-.node_modules
-node_modules
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
+.astro/
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# 本地验收截图（不需要入库）
+_shots/

@@ -1,0 +1,255 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { site, skills, loves, contacts } from '../config';
+---
+
+<BaseLayout title="关于" description={`${site.name}（${site.nameZh}）的个人简介、在写的东西与联系方式。`}>
+  <div class="wrap page-head">
+    <span class="eyebrow">ABOUT</span>
+    <h1>关于</h1>
+    <p class="muted">写代码的人，顺手记点东西。</p>
+  </div>
+
+  <div class="wrap" style="padding-bottom:96px">
+    <div class="cols">
+      <div class="col col--main">
+        <section class="block">
+          <h2>我在做什么</h2>
+          <p>
+            网名 <strong>{site.nameZh}</strong>，英文写作 <strong>{site.name}</strong>。白天写代码，晚上看点杂书。
+          </p>
+          <p>
+            这几年主要在做数据和人工智能方向的事，把研究过程里的想法随手记进
+            <a href="/blog/">笔记</a>。写得不算系统，但每篇都是自己真的看过、想过、踩过的东西。早年做过一段时间前端，那些练习也留在了
+            <a href="/#works">作品</a> 里。
+          </p>
+          <p>
+            喜欢的东西很杂：设计、古典乐、电影、诗、哲学、乒乓球、科幻、电子游戏。人不能只有一面，
+            代码之外还得有点别的，不然日子会变得很窄。
+          </p>
+        </section>
+
+        <section class="block">
+          <h2>技能</h2>
+          <p class="muted small">
+            这一栏基本上还停在几年前的样子，没有认真更新过。真正最近在做的事，都在
+            <a href="/blog/">笔记</a> 里。
+          </p>
+          <div class="skills">
+            {
+              skills.map((s) => (
+                <div class="skill">
+                  <p class="skill__group">{s.group}</p>
+                  <ul>
+                    {s.items.map((i) => <li>{i}</li>)}
+                  </ul>
+                </div>
+              ))
+            }
+          </div>
+        </section>
+
+        <section class="block">
+          <h2>这个站点</h2>
+          <p>
+            用 <a href="https://astro.build" target="_blank" rel="noopener">Astro</a> 写，纯静态输出，托管在 GitHub
+            Pages 上，没有服务器、没有数据库、没有外部 CDN。
+          </p>
+          <p class="muted small">
+            源码是公开的，想看实现可以去
+            <a href="https://github.com/huangpuyuan" target="_blank" rel="noopener">GitHub</a>。
+          </p>
+        </section>
+      </div>
+
+      <aside class="col col--side">
+        <section class="block block--tight">
+          <h3>喜欢</h3>
+          <ul class="loves">
+            {loves.map((l) => <li>{l}</li>)}
+          </ul>
+        </section>
+
+        <section class="block block--tight">
+          <h3>找我</h3>
+          <ul class="contact">
+            {contacts.map((c) => (
+              <li>
+                <a href={c.href} target="_blank" rel="noopener">
+                  {c.label}
+                  <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+                    <path d="M5 11L11 5M6 5h5v5"></path>
+                  </svg>
+                </a>
+              </li>
+            ))}
+            <li>
+              <a href="/rss.xml">
+                RSS
+                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+                  <path d="M5 11L11 5M6 5h5v5"></path>
+                </svg>
+              </a>
+            </li>
+          </ul>
+        </section>
+      </aside>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .page-head {
+    padding-block: 64px 44px;
+  }
+
+  .page-head h1 {
+    font-size: clamp(2.1rem, 6vw, 2.8rem);
+    margin: 0 0 12px;
+    letter-spacing: -0.035em;
+  }
+
+  .page-head p {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .cols {
+    display: grid;
+    gap: 56px;
+  }
+
+  @media (min-width: 900px) {
+    .cols {
+      grid-template-columns: 1.7fr 1fr;
+      gap: 72px;
+    }
+  }
+
+  .block + .block {
+    margin-top: 48px;
+    padding-top: 40px;
+    border-top: 1px solid var(--line);
+  }
+
+  .block--tight + .block--tight {
+    margin-top: 32px;
+    padding-top: 28px;
+  }
+
+  .col--side .block:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .block h2 {
+    font-size: 1.2rem;
+    margin: 0 0 16px;
+  }
+
+  .block h3 {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    font-weight: 500;
+    margin: 0 0 14px;
+  }
+
+  .block p {
+    margin: 0 0 14px;
+    font-size: 0.98rem;
+    line-height: 1.95;
+    color: var(--fg-muted);
+    max-width: 40em;
+  }
+
+  .block p a {
+    border-bottom: 1px solid var(--line-strong);
+  }
+
+  .block strong {
+    color: var(--fg);
+    font-weight: 650;
+  }
+
+  .small {
+    font-size: 0.88rem !important;
+  }
+
+  .skills {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
+  .skill {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    background: var(--bg-elev);
+  }
+
+  .skill__group {
+    font-size: 0.82rem !important;
+    color: var(--fg-faint) !important;
+    margin: 0 0 10px !important;
+  }
+
+  .skill ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .skill li {
+    font-size: 0.82rem;
+    color: var(--fg-muted);
+    background: var(--bg-sunken);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 2px 11px;
+  }
+
+  .loves,
+  .contact {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .loves {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .loves li {
+    font-size: 0.82rem;
+    color: var(--fg-muted);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px 12px;
+  }
+
+  .contact li + li {
+    margin-top: 10px;
+  }
+
+  .contact a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: var(--fg-muted);
+  }
+
+  .contact a:hover {
+    color: var(--accent);
+  }
+</style>

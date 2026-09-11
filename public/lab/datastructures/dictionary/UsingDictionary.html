@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>字典</title>
+</head>
+
+<body>
+<!-- data-lab-console -->
+<script data-lab-console>
+(function () {
+  var lines = [];
+  var box = null;
+
+  function ensure() {
+    if (box && box.isConnected) return box;
+    box = document.createElement('pre');
+    box.style.cssText =
+      'margin:0;padding:18px 20px;' +
+      'font:13px/1.75 ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,Menlo,' +
+      '"DejaVu Sans Mono","Segoe UI Symbol","Apple Symbols",monospace;' +
+      'white-space:pre-wrap;word-break:break-word;color:#0b0f14;background:#f6f7f9;' +
+      'border-bottom:1px solid #e2e6eb;min-height:34px';
+    var host = document.body || document.documentElement;
+    host.insertBefore(box, host.firstChild);
+    return box;
+  }
+
+  function fmt(v) {
+    var seen = [];
+    function walk(x, d) {
+      if (x === null) return 'null';
+      var t = typeof x;
+      if (t === 'string') return x;
+      if (t === 'number' || t === 'boolean' || t === 'bigint') return String(x);
+      if (t === 'undefined') return 'undefined';
+      if (t === 'function') return 'f ' + (x.name || 'anonymous');
+      if (x instanceof Error) return x.name + ': ' + x.message;
+      if (d > 5) return '...';
+      if (seen.indexOf(x) > -1) return '[Circular]';
+      seen.push(x);
+      if (Array.isArray(x)) {
+        return '[' + x.map(function (i) { return walk(i, d + 1); }).join(', ') + ']';
+      }
+      return '{' + Object.keys(x).map(function (k) {
+        return k + ': ' + walk(x[k], d + 1);
+      }).join(', ') + '}';
+    }
+    return walk(v, 0);
+  }
+
+  ['log', 'info', 'warn', 'error'].forEach(function (kind) {
+    var orig = console[kind] ? console[kind].bind(console) : function () {};
+    console[kind] = function () {
+      var args = Array.prototype.slice.call(arguments);
+      lines.push(args.map(fmt).join(' '));
+      try { ensure().textContent = lines.join('\n'); } catch (e) {}
+      orig.apply(null, args);
+    };
+  });
+
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      if (!lines.length) {
+        ensure().textContent = '(页面跑完了，但没有任何输出)';
+      }
+    }, 80);
+  });
+})();
+</script>
+
+<script src="dictionary.js"></script>
+    <script>
+    var dictionary = new Dictionary();
+
+    dictionary.set('Gandalf', 'gandalf@email.com');
+    dictionary.set('John', 'johnsnow@email.com');
+    dictionary.set('Tyrion', 'tyrion@email.com');
+
+    console.log(dictionary.has('Gandalf')); //outputs true
+    console.log(dictionary.size()); //outputs 3
+
+    console.log(dictionary.keys()); //outputs ["Gandalf", "John", "Tyrion"]
+    console.log(dictionary.values()); //outputs ["gandalf@email.com", "johnsnow@email.com", "tyrion@email.com"]
+    console.log(dictionary.get('Tyrion')); //outputs tyrion@email.com
+    console.log(dictionary.getItems());	
+
+    dictionary.remove('John');
+
+    console.log(dictionary.keys()); //outputs ["Gandalf", "Tyrion"]
+    console.log(dictionary.values()); //outputs ["gandalf@email.com", "tyrion@email.com"]
+
+    console.log(dictionary.getItems()); //Object {Gandalf: "gandalf@email.com", Tyrion: "tyrion@email.com"}
+    </script>
+<!-- data-lab-backlink -->
+<a data-lab-backlink href="../" title="返回数据结构练习" style="position:fixed;left:16px;bottom:16px;z-index:2147483647;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:rgba(15,20,28,.82);color:#fff;font:500 13px/1 ui-sans-serif,-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)">← 数据结构练习</a>
+</body>
+
+</html>

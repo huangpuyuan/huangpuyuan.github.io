@@ -1,0 +1,283 @@
+---
+import { site, nav } from '../config';
+
+const path = Astro.url.pathname;
+
+// 比较前先把结尾斜杠去掉，否则 /blog/ 这种带斜杠的导航项永远匹配不上
+const norm = (p: string) => (p === '/' ? '/' : p.replace(/\/+$/, ''));
+const here = norm(path);
+---
+
+<header class="nav">
+  <div class="wrap nav__inner">
+    <a class="brand" href="/" aria-label={`${site.name} 首页`}>
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <path d="M13.6 1.5 3.8 13.4h6.4L9.4 22.5 20.2 10.4h-6.5z"></path>
+        </svg>
+      </span>
+      <span class="brand__text">
+        <span class="brand__name">{site.name}</span>
+        <span class="brand__sub">{site.nameZh}</span>
+      </span>
+    </a>
+
+    <nav class="nav__links" aria-label="主导航">
+      {
+        nav.map((item) => {
+          // 锚点链接（/#works）不做高亮，避免首页同时亮起多个
+          const target = norm(item.href);
+          const active = item.href.includes('#')
+            ? false
+            : here === target || here.startsWith(target + '/');
+          return (
+            <a href={item.href} class:list={['nav__link', { 'is-active': active }]}>
+              {item.label}
+            </a>
+          );
+        })
+      }
+    </nav>
+
+    <div class="nav__actions">
+      <button class="icon-btn search-btn" type="button" data-search-open aria-label="搜索">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="6.5"></circle>
+          <path d="m16 16 4.5 4.5"></path>
+        </svg>
+        <span class="search-btn__hint">搜索</span>
+      </button>
+
+      <button class="icon-btn theme-btn" type="button" data-theme-toggle aria-label="切换深浅色">
+        <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2"></circle>
+          <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"></path>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1z"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<script>
+  function applyTheme(theme: 'light' | 'dark') {
+    document.documentElement.setAttribute('data-theme', theme);
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {}
+  }
+
+  function currentTheme(): 'light' | 'dark' {
+    const attr = document.documentElement.getAttribute('data-theme');
+    if (attr === 'dark' || attr === 'light') return attr;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function initThemeButton() {
+    const btn = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+    if (!btn || btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', () => {
+      applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
+    });
+  }
+
+  document.addEventListener('astro:page-load', initThemeButton);
+  initThemeButton();
+</script>
+
+<style>
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    height: var(--nav-h);
+    display: flex;
+    align-items: center;
+    background: color-mix(in srgb, var(--bg) 84%, transparent);
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.3s ease, background-color 0.25s ease;
+  }
+
+  .nav:has(~ main) {
+    border-bottom-color: var(--line);
+  }
+
+  .nav__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  /* ---------- 品牌 ---------- */
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--fg);
+    flex-shrink: 0;
+  }
+
+  .brand__mark {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--fg);
+    color: var(--bg);
+    display: grid;
+    place-items: center;
+    transition: background-color 0.2s ease;
+  }
+
+  .brand:hover .brand__mark {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .brand__text {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    line-height: 1;
+  }
+
+  .brand__name {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .brand__sub {
+    font-size: 0.72rem;
+    color: var(--fg-faint);
+    letter-spacing: 0.1em;
+  }
+
+  /* ---------- 链接 ---------- */
+  .nav__links {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+    flex-shrink: 1;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .nav__links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav__link {
+    position: relative;
+    font-size: 0.87rem;
+    color: var(--fg-muted);
+    padding: 7px 12px;
+    border-radius: 8px;
+    white-space: nowrap;
+    transition: color 0.18s ease, background-color 0.18s ease;
+  }
+
+  .nav__link:hover {
+    color: var(--fg);
+    background: var(--bg-sunken);
+  }
+
+  .nav__link.is-active {
+    color: var(--fg);
+    font-weight: 550;
+  }
+
+  .nav__link.is-active::after {
+    content: '';
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 2px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--accent);
+  }
+
+  /* ---------- 按钮 ---------- */
+  .nav__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+    color: var(--fg-muted);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.18s ease;
+  }
+
+  .icon-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .search-btn__hint {
+    font-size: 0.8rem;
+  }
+
+  .icon-moon {
+    display: none;
+  }
+
+  :global(:root[data-theme='dark']) .icon-sun {
+    display: none;
+  }
+
+  :global(:root[data-theme='dark']) .icon-moon {
+    display: block;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .icon-sun {
+      display: none;
+    }
+    :global(:root:not([data-theme='light'])) .icon-moon {
+      display: block;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .brand__sub {
+      display: none;
+    }
+    .nav__link {
+      padding: 7px 9px;
+      font-size: 0.84rem;
+    }
+    .search-btn__hint {
+      display: none;
+    }
+    .icon-btn {
+      padding: 0 9px;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .nav__link {
+      padding: 7px 7px;
+      font-size: 0.8rem;
+    }
+  }
+</style>

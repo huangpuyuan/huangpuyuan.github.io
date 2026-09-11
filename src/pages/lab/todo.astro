@@ -1,0 +1,838 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+// 提醒音的地址跟着 base 走，换域名/子路径都不用改这里
+const audioSrc = `${import.meta.env.BASE_URL}audio/alert.mp3`;
+---
+
+<BaseLayout
+  title="任务清单"
+  description="一个轻量的待办清单，可以给每条任务设提醒时间，到点会响。数据只存在你自己的浏览器里。"
+>
+  <div class="wrap page-head">
+    <span class="eyebrow">LAB / TODO</span>
+    <h1>任务清单</h1>
+    <p class="muted">
+      2017 年用 jQuery 写过一版，这次换成了原生 JavaScript，样式跟站点统一。
+      数据只存在这台设备的浏览器里，不上传、也不同步。
+    </p>
+  </div>
+
+  <div class="wrap" style="padding-bottom:96px">
+    <div class="board" data-todo>
+      <form class="adder" data-adder autocomplete="off">
+        <input
+          type="text"
+          name="content"
+          placeholder="想记点什么？回车就行"
+          maxlength="120"
+          aria-label="新任务内容"
+        />
+        <button class="btn btn--solid" type="submit">添加</button>
+      </form>
+
+      <div class="bar">
+        <div class="filters" data-filters>
+          <button class="chip is-active" type="button" data-filter="all">全部 <span data-count="all">0</span></button>
+          <button class="chip" type="button" data-filter="open">未完成 <span data-count="open">0</span></button>
+          <button class="chip" type="button" data-filter="done">已完成 <span data-count="done">0</span></button>
+        </div>
+        <button class="bar__clear" type="button" data-clear-done hidden>清除已完成</button>
+      </div>
+
+      <ul class="tasks" data-list></ul>
+
+      <p class="empty" data-empty>
+        还什么都没有。上面写一条试试。
+      </p>
+    </div>
+
+    <p class="footnote">
+      提醒到点会响一声，页面别关。浏览器要过一次交互才允许播放声音，所以先随便点一下页面。
+    </p>
+  </div>
+
+  {/* 详情 */}
+  <dialog class="sheet" data-sheet>
+    <form method="dialog" data-sheet-form>
+      <h2 class="sheet__title">任务详情</h2>
+
+      <label class="field">
+        <span class="field__label">内容</span>
+        <input type="text" name="content" maxlength="120" />
+      </label>
+
+      <label class="field">
+        <span class="field__label">备注</span>
+        <textarea name="desc" rows="3" placeholder="可选"></textarea>
+      </label>
+
+      <label class="field">
+        <span class="field__label">提醒时间</span>
+        <input type="datetime-local" name="remindAt" />
+      </label>
+
+      <div class="sheet__actions">
+        <button class="btn" type="button" data-sheet-cancel>取消</button>
+        <button class="btn btn--solid" type="submit">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  {/* 到点提醒 */}
+  <div class="toast" data-toast hidden role="status">
+    <span class="toast__label">到点了</span>
+    <span class="toast__text" data-toast-text></span>
+    <button class="btn" type="button" data-toast-close>知道了</button>
+  </div>
+
+  <audio data-alert src={audioSrc} preload="auto"></audio>
+</BaseLayout>
+
+<script>
+  type Task = {
+    id: string;
+    content: string;
+    desc: string;
+    remindAt: string;
+    done: boolean;
+    reminded: boolean;
+    createdAt: number;
+  };
+
+  const KEY = 'storm.lab.todo.v1';
+  const CHECK_MS = 20000;
+
+  function esc(s: string): string {
+    return s.replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string
+    );
+  }
+
+  /** 'YYYY-MM-DDTHH:mm' -> '今天 09:00' / '明天 09:00' / '3月5日 09:00' */
+  function humanTime(v: string): string {
+    if (!v) return '';
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return '';
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const thatDay = new Date(d);
+    thatDay.setHours(0, 0, 0, 0);
+
+    const diff = Math.round((thatDay.getTime() - today.getTime()) / 86400000);
+    const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+
+    if (diff === 0) return `今天 ${hm}`;
+    if (diff === 1) return `明天 ${hm}`;
+    if (diff === -1) return `昨天 ${hm}`;
+    if (diff > 1 && diff < 7) return `${diff} 天后 ${hm}`;
+    return `${d.getMonth() + 1}月${d.getDate()}日 ${hm}`;
+  }
+
+  function init() {
+    const root = document.querySelector<HTMLElement>('[data-todo]');
+    if (!root || root.dataset.ready === '1') return;
+    root.dataset.ready = '1';
+
+    const listEl = root.querySelector<HTMLElement>('[data-list]')!;
+    const adder = root.querySelector<HTMLFormElement>('[data-adder]')!;
+    const input = adder.querySelector<HTMLInputElement>('input[name=content]')!;
+    const emptyEl = root.querySelector<HTMLElement>('[data-empty]')!;
+    const filtersEl = root.querySelector<HTMLElement>('[data-filters]')!;
+    const clearBtn = root.querySelector<HTMLButtonElement>('[data-clear-done]')!;
+
+    const sheet = document.querySelector<HTMLDialogElement>('[data-sheet]')!;
+    const sheetForm = sheet.querySelector<HTMLFormElement>('[data-sheet-form]')!;
+    const sheetCancel = sheet.querySelector<HTMLButtonElement>('[data-sheet-cancel]')!;
+
+    const toast = document.querySelector<HTMLElement>('[data-toast]')!;
+    const toastText = toast.querySelector<HTMLElement>('[data-toast-text]')!;
+    const toastClose = toast.querySelector<HTMLButtonElement>('[data-toast-close]')!;
+    const alertAudio = document.querySelector<HTMLAudioElement>('[data-alert]')!;
+
+    let tasks: Task[] = read();
+    let filter: 'all' | 'open' | 'done' = 'all';
+    let editingId: string | null = null;
+
+    /* ---------- 存取 ---------- */
+    function read(): Task[] {
+      try {
+        const raw = localStorage.getItem(KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr.filter((t) => t && typeof t.content === 'string') : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function write() {
+      try {
+        localStorage.setItem(KEY, JSON.stringify(tasks));
+      } catch {}
+    }
+
+    function find(id: string) {
+      return tasks.find((t) => t.id === id);
+    }
+
+    /* ---------- 渲染 ---------- */
+    function visible() {
+      const open = tasks.filter((t) => !t.done);
+      const done = tasks.filter((t) => t.done);
+      if (filter === 'open') return open;
+      if (filter === 'done') return done;
+      // 未完成在前，两边都按创建时间倒序
+      return [...open.sort((a, b) => b.createdAt - a.createdAt), ...done.sort((a, b) => b.createdAt - a.createdAt)];
+    }
+
+    function counts() {
+      const done = tasks.filter((t) => t.done).length;
+      return { all: tasks.length, open: tasks.length - done, done };
+    }
+
+    function render() {
+      const rows = visible();
+      const c = counts();
+
+      for (const k of ['all', 'open', 'done'] as const) {
+        const el = root.querySelector<HTMLElement>(`[data-count=${k}]`);
+        if (el) el.textContent = String(c[k]);
+      }
+
+      listEl.innerHTML = rows
+        .map((t) => {
+          const when = humanTime(t.remindAt);
+          const overdue = when && !t.done && new Date(t.remindAt).getTime() <= Date.now();
+          return `
+            <li class="task${t.done ? ' is-done' : ''}" data-id="${t.id}">
+              <label class="task__check">
+                <input type="checkbox" ${t.done ? 'checked' : ''} data-toggle aria-label="标记完成" />
+                <span></span>
+              </label>
+              <div class="task__body">
+                <p class="task__content">${esc(t.content)}</p>
+                ${
+                  t.desc
+                    ? `<p class="task__desc">${esc(t.desc)}</p>`
+                    : ''
+                }
+                ${
+                  when
+                    ? `<span class="task__when${overdue ? ' is-overdue' : ''}">${overdue ? '已过期 · ' : ''}${when}</span>`
+                    : ''
+                }
+              </div>
+              <div class="task__ops">
+                <button class="op" type="button" data-edit>详细</button>
+                <button class="op op--danger" type="button" data-del>删除</button>
+              </div>
+            </li>`;
+        })
+        .join('');
+
+      emptyEl.hidden = rows.length > 0;
+      emptyEl.textContent =
+        tasks.length === 0
+          ? '还什么都没有。上面写一条试试。'
+          : `「${filter === 'open' ? '未完成' : '已完成'}」里没有内容。`;
+
+      clearBtn.hidden = counts().done === 0;
+
+      for (const b of filtersEl.querySelectorAll<HTMLButtonElement>('.chip')) {
+        b.classList.toggle('is-active', b.dataset.filter === filter);
+      }
+    }
+
+    /* ---------- 增删改 ---------- */
+    function add(content: string) {
+      const text = content.trim();
+      if (!text) return;
+      tasks.push({
+        id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`,
+        content: text,
+        desc: '',
+        remindAt: '',
+        done: false,
+        reminded: false,
+        createdAt: Date.now()
+      });
+      write();
+      filter = filter === 'done' ? 'all' : filter;
+      render();
+    }
+
+    function toggle(id: string) {
+      const t = find(id);
+      if (!t) return;
+      t.done = !t.done;
+      if (!t.done) t.reminded = false;
+      write();
+      render();
+    }
+
+    function remove(id: string) {
+      const t = find(id);
+      if (!t) return;
+      if (!confirm(`删除「${t.content}」？`)) return;
+      tasks = tasks.filter((x) => x.id !== id);
+      write();
+      render();
+    }
+
+    function clearDone() {
+      const n = counts().done;
+      if (!n || !confirm(`清除 ${n} 条已完成的任务？`)) return;
+      tasks = tasks.filter((t) => !t.done);
+      write();
+      render();
+    }
+
+    /* ---------- 详情 ---------- */
+    function openSheet(id: string) {
+      const t = find(id);
+      if (!t) return;
+      editingId = id;
+      (sheetForm.elements.namedItem('content') as HTMLInputElement).value = t.content;
+      (sheetForm.elements.namedItem('desc') as HTMLTextAreaElement).value = t.desc;
+      (sheetForm.elements.namedItem('remindAt') as HTMLInputElement).value = t.remindAt;
+      sheet.showModal();
+    }
+
+    sheetForm.addEventListener('submit', () => {
+      const t = editingId ? find(editingId) : null;
+      if (t) {
+        const nextContent = (sheetForm.elements.namedItem('content') as HTMLInputElement).value.trim();
+        const nextRemind = (sheetForm.elements.namedItem('remindAt') as HTMLInputElement).value;
+        t.content = nextContent || t.content;
+        t.desc = (sheetForm.elements.namedItem('desc') as HTMLTextAreaElement).value.trim();
+        // 改了时间就允许重新提醒一次
+        if (nextRemind !== t.remindAt) t.reminded = false;
+        t.remindAt = nextRemind;
+        write();
+        render();
+      }
+      editingId = null;
+      // method="dialog" 本来就会关，这里再显式关一次，不依赖默认行为
+      if (sheet.open) sheet.close();
+    });
+
+    sheetCancel.addEventListener('click', () => {
+      editingId = null;
+      sheet.close();
+    });
+
+    /* ---------- 提醒 ---------- */
+    function fire(text: string) {
+      toastText.textContent = text;
+      toast.hidden = false;
+      try {
+        alertAudio.currentTime = 0;
+        // 用户还没交互过浏览器会拒绝播放，静默失败即可，浮层照常弹
+        const p = alertAudio.play();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      } catch {}
+    }
+
+    toastClose.addEventListener('click', () => {
+      toast.hidden = true;
+    });
+
+    /** 到点的任务标成已提醒，返回第一条要弹的 */
+    function checkReminders(): Task | null {
+      const now = Date.now();
+      let hit: Task | null = null;
+      for (const t of tasks) {
+        if (t.done || t.reminded || !t.remindAt) continue;
+        const at = new Date(t.remindAt).getTime();
+        if (!isNaN(at) && at <= now) {
+          t.reminded = true;
+          if (!hit) hit = t; // 一次只弹一条，剩下的下一轮再说
+        }
+      }
+      if (hit) {
+        write();
+        render();
+      }
+      return hit;
+    }
+
+    const timer = setInterval(() => {
+      if (!root.isConnected) {
+        clearInterval(timer);
+        return;
+      }
+      const hit = checkReminders();
+      if (hit) fire(hit.content);
+    }, CHECK_MS);
+
+    /* ---------- 事件 ---------- */
+    adder.addEventListener('submit', (e) => {
+      e.preventDefault();
+      add(input.value);
+      input.value = '';
+      input.focus();
+    });
+
+    listEl.addEventListener('click', (e) => {
+      const li = (e.target as HTMLElement).closest<HTMLElement>('.task');
+      if (!li) return;
+      const id = li.dataset.id!;
+      const el = e.target as HTMLElement;
+
+      if (el.closest('[data-toggle]')) return toggle(id);
+      if (el.closest('[data-edit]')) return openSheet(id);
+      if (el.closest('[data-del]')) return remove(id);
+    });
+
+    // 双击任务正文也能打开详情
+    listEl.addEventListener('dblclick', (e) => {
+      const li = (e.target as HTMLElement).closest<HTMLElement>('.task');
+      if (li) openSheet(li.dataset.id!);
+    });
+
+    filtersEl.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('.chip');
+      if (!b) return;
+      filter = (b.dataset.filter as typeof filter) || 'all';
+      render();
+    });
+
+    clearBtn.addEventListener('click', clearDone);
+
+    render();
+
+    // 上次离开期间错过的提醒，一进来就补上
+    const missed = checkReminders();
+    if (missed) fire(missed.content);
+  }
+
+  document.addEventListener('astro:page-load', init);
+  init();
+</script>
+
+<style>
+  .page-head {
+    padding-block: 64px 28px;
+  }
+
+  .page-head h1 {
+    font-size: clamp(2.1rem, 6vw, 2.8rem);
+    margin: 0 0 12px;
+    letter-spacing: -0.035em;
+  }
+
+  .page-head p {
+    margin: 0;
+    max-width: 44em;
+    font-size: 0.95rem;
+    line-height: 1.85;
+  }
+
+  /* ---------- 面板 ---------- */
+  .board {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .adder {
+    display: flex;
+    gap: 10px;
+    padding: 18px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-sunken);
+  }
+
+  .adder input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 0.95rem;
+    color: var(--fg);
+    background: var(--bg-elev);
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    padding: 10px 18px;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .adder input::placeholder {
+    color: var(--fg-faint);
+  }
+
+  .adder input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    font-family: inherit;
+    font-size: 0.8rem;
+    color: var(--fg-muted);
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 14px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+
+  .chip span {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--fg-faint);
+    margin-left: 3px;
+  }
+
+  .chip:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .chip.is-active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .chip.is-active span {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .bar__clear {
+    font-family: inherit;
+    font-size: 0.8rem;
+    color: var(--fg-faint);
+    background: none;
+    border: none;
+    padding: 4px 2px;
+    cursor: pointer;
+  }
+
+  .bar__clear:hover {
+    color: var(--ember);
+  }
+
+  /* ---------- 列表 ---------- */
+  .tasks {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 列表项是 JS 运行时拼出来的，拿不到 Astro 的作用域属性，
+     所以这一组必须用 :global()，否则样式会静默失效。
+     统一挂在 .tasks 下面，也不会外泄到别的页面。 */
+  .tasks :global(.task) {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--line);
+    transition: background-color 0.18s ease;
+  }
+
+  .tasks :global(.task:last-child) {
+    border-bottom: none;
+  }
+
+  .tasks :global(.task:hover) {
+    background: var(--bg-sunken);
+  }
+
+  .tasks :global(.task__check) {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    cursor: pointer;
+  }
+
+  .tasks :global(.task__check input) {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .tasks :global(.task__check span) {
+    width: 19px;
+    height: 19px;
+    border: 1.5px solid var(--line-strong);
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    transition: all 0.16s ease;
+  }
+
+  .tasks :global(.task__check span::after) {
+    content: '';
+    width: 9px;
+    height: 5px;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(-45deg) scale(0.6);
+    opacity: 0;
+    transition: all 0.16s ease;
+  }
+
+  .tasks :global(.task__check:hover span) {
+    border-color: var(--accent);
+  }
+
+  .tasks :global(.task__check input:checked + span) {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .tasks :global(.task__check input:checked + span::after) {
+    opacity: 1;
+    transform: rotate(-45deg) scale(1);
+  }
+
+  .tasks :global(.task__check input:focus-visible + span) {
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .tasks :global(.task__body) {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .tasks :global(.task__content) {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.65;
+    word-break: break-word;
+    transition: color 0.18s ease;
+  }
+
+  .tasks :global(.task__desc) {
+    margin: 6px 0 0;
+    font-size: 0.83rem;
+    line-height: 1.7;
+    color: var(--fg-muted);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .tasks :global(.task__when) {
+    display: inline-block;
+    margin-top: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.71rem;
+    color: var(--fg-faint);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 9px;
+  }
+
+  .tasks :global(.task__when.is-overdue) {
+    color: var(--ember);
+    border-color: color-mix(in srgb, var(--ember) 42%, transparent);
+    background: var(--ember-soft);
+  }
+
+  .tasks :global(.task.is-done .task__content) {
+    color: var(--fg-faint);
+    text-decoration: line-through;
+    text-decoration-color: var(--line-strong);
+  }
+
+  .tasks :global(.task__ops) {
+    flex-shrink: 0;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+  }
+
+  .tasks :global(.task:hover .task__ops),
+  .tasks :global(.task:focus-within .task__ops) {
+    opacity: 1;
+  }
+
+  .tasks :global(.op) {
+    font-family: inherit;
+    font-size: 0.78rem;
+    color: var(--fg-muted);
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 3px 10px;
+    cursor: pointer;
+    transition: all 0.16s ease;
+  }
+
+  .tasks :global(.op:hover) {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .tasks :global(.op--danger:hover) {
+    color: var(--ember);
+    border-color: var(--ember);
+  }
+
+  .empty {
+    margin: 0;
+    padding: 44px 18px;
+    text-align: center;
+    font-size: 0.88rem;
+    color: var(--fg-faint);
+  }
+
+  .footnote {
+    margin: 16px 0 0;
+    font-size: 0.8rem;
+    line-height: 1.8;
+    color: var(--fg-faint);
+  }
+
+  /* ---------- 详情弹层 ---------- */
+  .sheet {
+    width: min(440px, calc(100vw - 32px));
+    padding: 24px;
+    color: var(--fg);
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lift);
+  }
+
+  .sheet::backdrop {
+    background: rgba(6, 9, 13, 0.5);
+    backdrop-filter: blur(3px);
+  }
+
+  .sheet__title {
+    margin: 0 0 20px;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+  }
+
+  .field {
+    display: block;
+    margin-bottom: 16px;
+  }
+
+  .field__label {
+    display: block;
+    margin-bottom: 7px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+  }
+
+  .field input,
+  .field textarea {
+    width: 100%;
+    font: inherit;
+    font-size: 0.9rem;
+    color: var(--fg);
+    background: var(--bg-sunken);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    resize: vertical;
+  }
+
+  .field input:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .sheet__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  /* ---------- 提醒浮层 ---------- */
+  .toast {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 60;
+    max-width: min(340px, calc(100vw - 40px));
+    padding: 16px 18px;
+    background: var(--bg-elev);
+    border: 1px solid var(--line-strong);
+    border-left: 3px solid var(--ember);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lift);
+    animation: toast-in 0.25s cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+
+  .toast__label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ember);
+  }
+
+  .toast__text {
+    display: block;
+    margin: 8px 0 14px;
+    font-size: 0.94rem;
+    line-height: 1.6;
+    word-break: break-word;
+  }
+
+  .toast .btn {
+    font-size: 0.82rem;
+    padding: 6px 14px;
+  }
+
+  /* 触摸设备没有 hover，操作按钮得常显，否则点不到 */
+  @media (hover: none) {
+    .tasks :global(.task__ops) {
+      opacity: 1;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .adder {
+      flex-wrap: wrap;
+    }
+    .adder input {
+      flex-basis: 100%;
+    }
+  }
+</style>

@@ -1,0 +1,168 @@
+---
+// 风暴粒子场：自绘 canvas，不依赖任何第三方库与 CDN
+// 粒子带风向漂移 + 拖尾，像被风推着走
+---
+
+<canvas class="storm-canvas" aria-hidden="true"></canvas>
+
+<script>
+  type Drop = {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    r: number;
+    trail: number;
+  };
+
+  const WIND_BASE = { x: -0.42, y: 0.16 };
+
+  function boot(canvas: HTMLCanvasElement) {
+    if (canvas.dataset.ready === '1') return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    canvas.dataset.ready = '1';
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let w = 0;
+    let h = 0;
+    let drops: Drop[] = [];
+    let raf = 0;
+    let t = 0;
+
+    function dark() {
+      const attr = document.documentElement.getAttribute('data-theme');
+      if (attr === 'dark') return true;
+      if (attr === 'light') return false;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+
+    function hue() {
+      return dark() ? '110, 168, 254' : '31, 95, 224';
+    }
+
+    function layout() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = rect.width;
+      h = rect.height;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const count = Math.min(120, Math.max(34, Math.round((w * h) / 14000)));
+      drops = Array.from({ length: count }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: WIND_BASE.x * (0.5 + Math.random()),
+        vy: WIND_BASE.y * (0.5 + Math.random()),
+        r: Math.random() * 1.4 + 0.5,
+        trail: 0
+      }));
+    }
+
+    function frame() {
+      const c = hue();
+      ctx!.clearRect(0, 0, w, h);
+      t += 0.006;
+
+      // 阵风：风向与强度缓慢起伏
+      const gustX = WIND_BASE.x * (1 + Math.sin(t) * 0.6);
+      const gustY = WIND_BASE.y * (1 + Math.cos(t * 0.8) * 0.5);
+
+      for (const d of drops) {
+        d.x += d.vx + gustX * 0.5;
+        d.y += d.vy + gustY * 0.5;
+
+        if (d.x < -30) d.x = w + 20;
+        if (d.x > w + 30) d.x = -20;
+        if (d.y < -30) d.y = h + 20;
+        if (d.y > h + 30) d.y = -20;
+
+        d.trail = d.trail || Math.random() * 10 + 6;
+
+        // 拖尾：沿风向拉一条短线
+        ctx!.strokeStyle = `rgba(${c}, 0.26)`;
+        ctx!.lineWidth = d.r * 0.7;
+        ctx!.beginPath();
+        ctx!.moveTo(d.x, d.y);
+        ctx!.lineTo(d.x - (d.vx + gustX * 0.5) * d.trail, d.y - (d.vy + gustY * 0.5) * d.trail);
+        ctx!.stroke();
+
+        ctx!.fillStyle = `rgba(${c}, 0.55)`;
+        ctx!.beginPath();
+        ctx!.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+        ctx!.fill();
+      }
+
+      // 近邻连线
+      for (let i = 0; i < drops.length; i++) {
+        for (let j = i + 1; j < drops.length; j++) {
+          const dx = drops[i].x - drops[j].x;
+          const dy = drops[i].y - drops[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 112) {
+            ctx!.strokeStyle = `rgba(${c}, ${(1 - dist / 112) * 0.13})`;
+            ctx!.lineWidth = 0.6;
+            ctx!.beginPath();
+            ctx!.moveTo(drops[i].x, drops[i].y);
+            ctx!.lineTo(drops[j].x, drops[j].y);
+            ctx!.stroke();
+          }
+        }
+      }
+
+      if (!canvas.isConnected) {
+        cancelAnimationFrame(raf);
+        return;
+      }
+      raf = requestAnimationFrame(frame);
+    }
+
+    function still() {
+      const c = hue();
+      ctx!.clearRect(0, 0, w, h);
+      drops.forEach((d) => {
+        ctx!.fillStyle = `rgba(${c}, 0.45)`;
+        ctx!.beginPath();
+        ctx!.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+        ctx!.fill();
+      });
+    }
+
+    layout();
+    reduced.matches ? still() : (raf = requestAnimationFrame(frame));
+
+    let timer: number | undefined;
+    window.addEventListener('resize', () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        layout();
+        if (reduced.matches) still();
+      }, 150);
+    });
+
+    new MutationObserver(() => {
+      if (reduced.matches) still();
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  }
+
+  function initAll() {
+    document.querySelectorAll<HTMLCanvasElement>('.storm-canvas').forEach(boot);
+  }
+
+  document.addEventListener('astro:page-load', initAll);
+  initAll();
+</script>
+
+<style>
+  .storm-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+    z-index: 0;
+  }
+</style>

@@ -1,0 +1,72 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { site } from '../config';
+---
+
+<BaseLayout title="页面走丢了" description="没有找到这个页面。">
+  <div class="wrap err">
+    <p class="err__code">ERROR 404</p>
+    <h1>这页被风吹走了</h1>
+    <p class="err__text">
+      可能是链接太旧，也可能是当年那个地址已经不在。要不回首页，或者去翻翻笔记？
+    </p>
+    <div class="err__actions">
+      <a class="btn btn--solid" href="/">回首页</a>
+      <a class="btn" href="/blog/">翻笔记</a>
+      <button class="btn" type="button" data-search-open>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="6.5"></circle>
+          <path d="m16 16 4.5 4.5"></path>
+        </svg>
+        搜索
+      </button>
+    </div>
+    <p class="err__sig">{site.name} · {site.nameZh}</p>
+  </div>
+</BaseLayout>
+
+<style>
+  .err {
+    min-height: 64vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding-block: 80px;
+  }
+
+  .err__code {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.3em;
+    color: var(--fg-faint);
+    margin: 0 0 20px;
+  }
+
+  .err h1 {
+    font-size: clamp(1.9rem, 5.4vw, 2.6rem);
+    margin: 0 0 16px;
+    letter-spacing: -0.03em;
+  }
+
+  .err__text {
+    margin: 0 0 32px;
+    color: var(--fg-muted);
+    max-width: 30em;
+    line-height: 1.85;
+  }
+
+  .err__actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .err__sig {
+    margin: 48px 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    color: var(--fg-faint);
+  }
+</style>

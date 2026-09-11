@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>背景定位</title>
+    <style>
+    body {
+        font-size: 20px;
+    }
+    
+    div {
+        height: 5em;
+        width: 10em;
+        margin: 1.5em;
+        padding: 10px;
+        color: #fff;
+        font-weight: lighter;
+    }
+    
+    .pos {
+        background: url(http://csssecrets.io/images/code-pirate.svg) no-repeat bottom right #58a;
+        background-position: right 20px bottom 10px;
+    }
+    
+    .origin {
+        background: url(http://csssecrets.io/images/code-pirate.svg) no-repeat bottom right #58a;
+        background-origin: content-box;
+    }
+    
+    .calc {
+        background: url(http://csssecrets.io/images/code-pirate.svg) no-repeat #58a;
+        background-position: calc(100% - 20px) calc(100% - 10px);
+    }
+    </style>
+</head>
+
+<body>
+    <div class="pos">Code Pirate</div>
+    <div class="origin">Code origin</div>
+    <div class="calc">Code origin</div>
+<!-- data-lab-backlink -->
+<a data-lab-backlink href="../../" title="返回前端练习集" style="position:fixed;left:16px;bottom:16px;z-index:2147483647;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:rgba(15,20,28,.82);color:#fff;font:500 13px/1 ui-sans-serif,-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)">← 前端练习集</a>
+</body>
+
+</html>

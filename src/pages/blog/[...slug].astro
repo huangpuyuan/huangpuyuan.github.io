@@ -1,0 +1,399 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProgressBar from '../../components/ProgressBar.astro';
+import { formatDateCN, readingTime, postUrl, tagUrl } from '../../utils/format';
+
+export async function getStaticPaths() {
+  const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
+    (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+  );
+
+  return posts.map((post, i) => ({
+    params: { slug: post.id },
+    props: {
+      post,
+      prev: posts[i + 1] ?? null,
+      next: posts[i - 1] ?? null,
+      related: posts
+        .filter((p) => p.id !== post.id && p.data.category === post.data.category)
+        .slice(0, 3)
+    }
+  }));
+}
+
+interface Props {
+  post: CollectionEntry<'blog'>;
+  prev: CollectionEntry<'blog'> | null;
+  next: CollectionEntry<'blog'> | null;
+  related: CollectionEntry<'blog'>[];
+}
+
+const { post, prev, next, related } = Astro.props;
+const { Content, headings } = await render(post);
+
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const category = post.data.category?.trim() || '随笔';
+---
+
+<BaseLayout title={post.data.title} description={post.data.summary} type="article">
+  <ProgressBar />
+
+  <article data-article>
+    <header class="post__head">
+      <div class="post__head-inner">
+        <a class="back" href="/blog/">
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+            <path d="M13 8H3M7 4L3 8l4 4"></path>
+          </svg>
+          全部笔记
+        </a>
+
+        <div class="post__meta">
+          <a class="tag" href={tagUrl(category)}>{category}</a>
+          <time datetime={post.data.date.toISOString()}>{formatDateCN(post.data.date)}</time>
+          <span class="post__dot">·</span>
+          <span>约 {readingTime(post.body ?? '')}</span>
+        </div>
+
+        <h1>{post.data.title}</h1>
+        {post.data.summary && <p class="post__summary">{post.data.summary}</p>}
+      </div>
+    </header>
+
+    <div class="wrap post__body">
+      <div class="wrap--narrow post__main">
+        <div class="prose">
+          <Content />
+        </div>
+
+        <nav class="pager" aria-label="相邻文章">
+          {
+            prev ? (
+              <a class="pager__item" href={postUrl(prev.id)}>
+                <span class="pager__dir">上一篇</span>
+                <span class="pager__title">{prev.data.title}</span>
+              </a>
+            ) : (
+              <span />
+            )
+          }
+          {
+            next ? (
+              <a class="pager__item pager__item--right" href={postUrl(next.id)}>
+                <span class="pager__dir">下一篇</span>
+                <span class="pager__title">{next.data.title}</span>
+              </a>
+            ) : (
+              <span />
+            )
+          }
+        </nav>
+
+        {
+          related.length > 0 && (
+            <section class="related">
+              <h2 class="related__label">同类文章</h2>
+              <ul>
+                {related.map((r) => (
+                  <li>
+                    <a href={postUrl(r.id)}>{r.data.title}</a>
+                  </li>
+                ))}
+              </ul>
+              <a class="more-link" href={tagUrl(category)}>
+                看全部「{category}」
+                <svg class="arrow" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                  <path d="M3 8h10M9 4l4 4-4 4"></path>
+                </svg>
+              </a>
+            </section>
+          )
+        }
+      </div>
+
+      {
+        toc.length > 1 && (
+          <aside class="toc" aria-label="文章目录">
+            <p class="toc__label">目录</p>
+            <ul>
+              {toc.map((h) => (
+                <li class={h.depth === 3 ? 'is-sub' : ''}>
+                  <a href={`#${h.slug}`}>{h.text}</a>
+                </li>
+              ))}
+            </ul>
+          </aside>
+        )
+      }
+    </div>
+  </article>
+</BaseLayout>
+
+<script>
+  function initToc() {
+    const links = [...document.querySelectorAll<HTMLAnchorElement>('.toc a')];
+    if (!links.length) return;
+
+    const targets = links
+      .map((a) => {
+        const id = decodeURIComponent(a.getAttribute('href')!.slice(1));
+        const el = document.getElementById(id);
+        return el ? { a, el } : null;
+      })
+      .filter(Boolean) as { a: HTMLAnchorElement; el: HTMLElement }[];
+
+    if (!targets.length) return;
+
+    function highlight() {
+      let current = targets[0];
+      for (const t of targets) {
+        if (t.el.getBoundingClientRect().top <= 140) current = t;
+      }
+      targets.forEach((t) => t.a.classList.toggle('is-active', t.a === current.a));
+    }
+
+    window.removeEventListener('scroll', window.__stormToc as EventListener);
+    window.__stormToc = highlight;
+    window.addEventListener('scroll', highlight, { passive: true });
+    highlight();
+  }
+
+  document.addEventListener('astro:page-load', initToc);
+  initToc();
+</script>
+
+<style>
+  .wrap--narrow {
+    max-width: 720px;
+  }
+
+  /* 头部与正文列严格对齐：同一套网格，头部内容只占第一列 */
+  .post__head-inner {
+    width: 100%;
+    max-width: var(--maxw);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  @media (min-width: 1080px) {
+    .post__head-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 720px) 200px;
+      column-gap: 56px;
+      row-gap: 0;
+      justify-content: center;
+    }
+
+    .post__head-inner > * {
+      grid-column: 1;
+    }
+  }
+
+  .post__head {
+    padding-block: 60px 40px;
+    border-bottom: 1px solid var(--line);
+    background:
+      radial-gradient(760px 320px at 8% -40%, var(--accent-soft), transparent 62%),
+      var(--bg);
+  }
+
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: var(--fg-muted);
+    margin-bottom: 30px;
+  }
+
+  .back:hover {
+    color: var(--accent);
+  }
+
+  .post__meta {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-size: 0.73rem;
+    color: var(--fg-faint);
+    margin-bottom: 18px;
+  }
+
+  .post__dot {
+    color: var(--line-strong);
+  }
+
+  .post__head h1 {
+    font-size: clamp(1.7rem, 4.6vw, 2.3rem);
+    margin: 0;
+    letter-spacing: -0.028em;
+    line-height: 1.32;
+  }
+
+  .post__summary {
+    margin: 20px 0 0;
+    font-size: 0.95rem;
+    line-height: 1.85;
+    color: var(--fg-muted);
+    padding-left: 15px;
+    border-left: 2px solid var(--ember);
+  }
+
+  .post__body {
+    display: block;
+  }
+
+  .post__main {
+    padding-block: 48px 72px;
+    margin-inline: 0;
+  }
+
+  .pager {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding-block: 32px;
+    border-top: 1px solid var(--line);
+  }
+
+  .pager__item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--bg-elev);
+    color: var(--fg);
+    transition: all 0.2s ease;
+  }
+
+  .pager__item:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .pager__item--right {
+    text-align: right;
+  }
+
+  .pager__dir {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    color: var(--fg-faint);
+  }
+
+  .pager__title {
+    font-size: 0.93rem;
+    line-height: 1.5;
+  }
+
+  .related {
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+  }
+
+  .related__label {
+    font-family: var(--font-mono);
+    font-size: 0.71rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    margin: 0 0 14px;
+    font-weight: 500;
+  }
+
+  .related ul {
+    list-style: none;
+    margin: 0 0 18px;
+    padding: 0;
+  }
+
+  .related li + li {
+    margin-top: 8px;
+  }
+
+  .related a {
+    font-size: 0.94rem;
+    color: var(--fg-muted);
+  }
+
+  .related a:hover {
+    color: var(--accent);
+  }
+
+  .toc {
+    display: none;
+  }
+
+  @media (min-width: 1080px) {
+    .post__body {
+      display: grid;
+      grid-template-columns: minmax(0, 720px) 200px;
+      gap: 56px;
+      justify-content: center;
+      align-items: start;
+    }
+
+    .toc {
+      display: block;
+      position: sticky;
+      top: calc(var(--nav-h) + 28px);
+      padding-top: 52px;
+      max-height: calc(100vh - var(--nav-h) - 56px);
+      overflow-y: auto;
+    }
+
+    .toc__label {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--fg-faint);
+      margin: 0 0 12px;
+    }
+
+    .toc ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      border-left: 1px solid var(--line);
+    }
+
+    .toc li a {
+      display: block;
+      font-size: 0.81rem;
+      line-height: 1.55;
+      color: var(--fg-faint);
+      padding: 5px 0 5px 13px;
+      border-left: 2px solid transparent;
+      margin-left: -1.5px;
+      transition: all 0.16s ease;
+    }
+
+    .toc li.is-sub a {
+      padding-left: 26px;
+      font-size: 0.78rem;
+    }
+
+    .toc li a:hover {
+      color: var(--fg);
+    }
+
+    .toc li a.is-active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+    }
+  }
+
+  @media (max-width: 560px) {
+    .pager {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

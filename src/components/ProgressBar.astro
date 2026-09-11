@@ -1,0 +1,69 @@
+---
+// 阅读进度条，只在文章页挂载
+---
+
+<div class="progress" aria-hidden="true"><span data-progress-bar></span></div>
+
+<script>
+  function initProgress() {
+    const bar = document.querySelector<HTMLElement>('[data-progress-bar]');
+    if (!bar) return;
+
+    const article = document.querySelector<HTMLElement>('[data-article]');
+    if (!article) {
+      bar.style.transform = 'scaleX(0)';
+      return;
+    }
+
+    let ticking = false;
+
+    function update() {
+      ticking = false;
+      const rect = article!.getBoundingClientRect();
+      const total = rect.height - window.innerHeight * 0.6;
+      const passed = -rect.top + window.innerHeight * 0.25;
+      const ratio = total > 0 ? Math.min(1, Math.max(0, passed / total)) : 1;
+      bar!.style.transform = `scaleX(${ratio})`;
+    }
+
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    }
+
+    const w = window as unknown as Record<string, unknown>;
+    if (typeof w.__stormProgress === 'function') {
+      window.removeEventListener('scroll', w.__stormProgress as EventListener);
+      window.removeEventListener('resize', w.__stormProgress as EventListener);
+    }
+    w.__stormProgress = onScroll;
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    update();
+  }
+
+  document.addEventListener('astro:page-load', initProgress);
+  initProgress();
+</script>
+
+<style>
+  .progress {
+    position: fixed;
+    top: var(--nav-h);
+    left: 0;
+    right: 0;
+    height: 2px;
+    z-index: 39;
+    pointer-events: none;
+  }
+
+  .progress span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--ember));
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    transition: transform 0.08s linear;
+  }
+</style>

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        width: 1200px;
+        height: 630px;
+        font-family: ui-sans-serif, -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        background: #07090d;
+        color: #e8ecf1;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .glow-a,
+      .glow-b {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(120px);
+      }
+
+      .glow-a {
+        width: 760px;
+        height: 520px;
+        left: -180px;
+        top: -220px;
+        background: rgba(31, 95, 224, 0.42);
+      }
+
+      .glow-b {
+        width: 520px;
+        height: 420px;
+        right: -120px;
+        bottom: -180px;
+        background: rgba(194, 65, 12, 0.24);
+      }
+
+      .grid {
+        position: absolute;
+        inset: 0;
+        background-image: linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+        background-size: 60px 60px;
+        mask-image: radial-gradient(circle at 30% 40%, #000 20%, transparent 78%);
+        -webkit-mask-image: radial-gradient(circle at 30% 40%, #000 20%, transparent 78%);
+      }
+
+      .inner {
+        position: relative;
+        height: 100%;
+        padding: 74px 80px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .mark {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+      }
+
+      .bolt {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: #1f5fe0;
+        display: grid;
+        place-items: center;
+        color: #fff;
+      }
+
+      .brandline {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .brandline span {
+        color: #6b7686;
+        font-weight: 400;
+        margin-left: 10px;
+        letter-spacing: 0.1em;
+      }
+
+      .name {
+        font-size: 132px;
+        font-weight: 800;
+        letter-spacing: -0.05em;
+        line-height: 0.94;
+      }
+
+      .name i {
+        color: #c2410c;
+        font-style: normal;
+      }
+
+      .tagline {
+        margin-top: 22px;
+        font-size: 27px;
+        color: #98a2b3;
+        letter-spacing: 0.02em;
+      }
+
+      .foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 19px;
+        color: #6b7686;
+        letter-spacing: 0.08em;
+      }
+
+      .chips {
+        display: flex;
+        gap: 12px;
+      }
+
+      .chips span {
+        border: 1px solid #2a333d;
+        border-radius: 999px;
+        padding: 6px 18px;
+        font-size: 17px;
+        color: #98a2b3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="glow-a"></div>
+    <div class="glow-b"></div>
+    <div class="grid"></div>
+
+    <div class="inner">
+      <div class="mark">
+        <div class="bolt">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M13.6 1.5 3.8 13.4h6.4L9.4 22.5 20.2 10.4h-6.5z"></path>
+          </svg>
+        </div>
+        <div class="brandline">Storm<span>开泰</span></div>
+      </div>
+
+      <div>
+        <div class="name">Storm<i>.</i></div>
+        <div class="tagline">写点研究笔记，放几个写过的东西，偶尔读诗。</div>
+      </div>
+
+      <div class="foot">
+        <div class="chips">
+          <span>研究笔记</span>
+          <span>数据与 AI</span>
+          <span>读书与诗</span>
+        </div>
+        <div>SOFTWARE DEVELOPER</div>
+      </div>
+    </div>
+  </body>
+</html>

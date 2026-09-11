@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>parallelograms-pseudo</title>
+    <style>
+    .button {
+        position: relative;
+        display: inline-block;
+        padding: .5em 1em;
+        border: 0;
+        margin: .5em;
+        background: transparent;
+        color: white;
+        text-transform: uppercase;
+        text-decoration: none;
+        font: bold 200%/1 sans-serif;
+    }
+    
+    .button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: -1;
+        background: #58a;
+        transform: skew(45deg);
+    }
+    </style>
+</head>
+
+<body>
+    <a href="#yolo" class="button">Click Me</a>
+<!-- data-lab-backlink -->
+<a data-lab-backlink href="../../" title="返回前端练习集" style="position:fixed;left:16px;bottom:16px;z-index:2147483647;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:rgba(15,20,28,.82);color:#fff;font:500 13px/1 ui-sans-serif,-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)">← 前端练习集</a>
+</body>
+
+</html>

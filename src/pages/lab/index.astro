@@ -1,0 +1,218 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { labs } from '../../config';
+
+/** 想先看点什么的话，这几条最值得点 */
+const highlights = [
+  { title: '集合的并交差', href: '/lab/datastructures/set/UsingSet.html' },
+  { title: '二叉搜索树', href: '/lab/datastructures/trees/binarySearchTree.html' },
+  { title: 'CSS 画五星红旗', href: '/lab/frontend/css-plotting/the Five-Starred Red Flag.html' },
+  { title: '图片轮播（原生 JS）', href: '/lab/frontend/exercises/exercise2/' },
+  { title: '任务清单', href: '/lab/todo/' }
+];
+---
+
+<BaseLayout
+  title="实验室"
+  description="2016 到 2017 年写的一些小东西，源码原样保留，换成现在的排版。"
+>
+  <div class="wrap page-head">
+    <span class="eyebrow">LAB</span>
+    <h1>实验室</h1>
+    <p class="muted">
+      2016 到 2017 年学编程时攒下的三个项目。源码是原样搬过来的，
+      只把当年依赖的外部 CDN 换成了本地文件——那些服务现在基本都关停了。
+    </p>
+
+    <div class="jump">
+      <span class="jump__label">不知道看什么的话</span>
+      <div class="jump__links">
+        {highlights.map((h) => <a href={h.href}>{h.title}</a>)}
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap" style="padding-bottom:112px">
+    <div class="grid">
+      {
+        labs.map((l) => (
+          <a class="card lab-card" href={l.href}>
+            <div class="lab-card__top">
+              <span class="tag">{l.tag}</span>
+              <span class="lab-card__year">{l.year}</span>
+            </div>
+            <h2>{l.title}</h2>
+            <p>{l.desc}</p>
+            <ul class="lab-card__parts">
+              {l.parts.map((p) => (
+                <li>{p}</li>
+              ))}
+            </ul>
+            <span class="lab-card__cta">
+              打开看看
+              <svg class="arrow" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                <path d="M3 8h10M9 4l4 4-4 4"></path>
+              </svg>
+            </span>
+            <p class="lab-card__note">{l.note}</p>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .page-head {
+    padding-block: 64px 40px;
+  }
+
+  .page-head h1 {
+    font-size: clamp(2.1rem, 6vw, 2.8rem);
+    margin: 0 0 12px;
+    letter-spacing: -0.035em;
+  }
+
+  .page-head > p {
+    margin: 0;
+    max-width: 46em;
+    font-size: 0.95rem;
+    line-height: 1.85;
+  }
+
+  /* ---------- 快速跳转 ---------- */
+  .jump {
+    margin-top: 32px;
+    padding: 18px 20px;
+    background: var(--bg-sunken);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+
+  .jump__label {
+    display: block;
+    margin-bottom: 12px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+  }
+
+  .jump__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .jump__links a {
+    font-size: 0.84rem;
+    color: var(--fg-muted);
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 14px;
+    transition: all 0.18s ease;
+  }
+
+  .jump__links a:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  /* ---------- 项目卡片 ---------- */
+  .grid {
+    display: grid;
+    gap: 20px;
+  }
+
+  .lab-card {
+    display: flex;
+    flex-direction: column;
+    padding: 26px;
+    color: var(--fg);
+  }
+
+  .lab-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .lab-card__year {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--fg-faint);
+  }
+
+  .lab-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.15rem;
+    letter-spacing: -0.015em;
+    transition: color 0.18s ease;
+  }
+
+  .lab-card:hover h2 {
+    color: var(--accent);
+  }
+
+  .lab-card > p {
+    margin: 0;
+    font-size: 0.87rem;
+    line-height: 1.78;
+    color: var(--fg-muted);
+  }
+
+  .lab-card__parts {
+    list-style: none;
+    margin: 18px 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .lab-card__parts li {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--fg-faint);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 2px 8px;
+  }
+
+  .lab-card__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-size: 0.85rem;
+    color: var(--fg-muted);
+  }
+
+  .lab-card:hover .lab-card__cta {
+    color: var(--accent);
+  }
+
+  .lab-card__note {
+    margin: 10px 0 0 !important;
+    font-size: 0.78rem !important;
+    line-height: 1.7 !important;
+    color: var(--fg-faint) !important;
+  }
+
+  @media (min-width: 760px) {
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1040px) {
+    .grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>

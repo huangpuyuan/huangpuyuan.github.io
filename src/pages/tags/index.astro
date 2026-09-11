@@ -1,0 +1,86 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { tagUrl } from '../../utils/format';
+
+const posts = await getCollection('blog', ({ data }) => !data.draft);
+
+const counts = new Map<string, number>();
+for (const post of posts) {
+  const key = post.data.category?.trim() || '随笔';
+  counts.set(key, (counts.get(key) ?? 0) + 1);
+}
+
+const tags = [...counts.entries()]
+  .map(([name, count]) => ({ name, count, url: tagUrl(name) }))
+  .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh'));
+---
+
+<BaseLayout title="分类" description={`全部 ${tags.length} 个分类，共 ${posts.length} 篇笔记。`}>
+  <div class="wrap page-head">
+    <span class="eyebrow">TOPICS</span>
+    <h1>分类</h1>
+    <p class="muted">按主题翻阅，共 {tags.length} 个分类、{posts.length} 篇笔记。</p>
+  </div>
+
+  <div class="wrap" style="padding-bottom:88px">
+    <ul class="tags">
+      {
+        tags.map((t) => (
+          <li>
+            <a class="tag-card card" href={t.url}>
+              <span class="tag-card__name">{t.name}</span>
+              <span class="tag-card__count">{t.count}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</BaseLayout>
+
+<style>
+  .page-head {
+    padding-block: 64px 40px;
+  }
+
+  .page-head h1 {
+    font-size: clamp(1.9rem, 5vw, 2.4rem);
+    margin: 0 0 12px;
+    letter-spacing: -0.03em;
+  }
+
+  .page-head p {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .tags {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+
+  .tag-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    color: var(--fg);
+  }
+
+  .tag-card__name {
+    font-size: 1rem;
+    font-weight: 550;
+  }
+
+  .tag-card__count {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--fg-faint);
+  }
+</style>
