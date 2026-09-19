@@ -5,25 +5,14 @@
  * 依赖: 只需要 Node 22+（内置 WebSocket）和本机 Chrome
  */
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { requireChrome, profileDir } from './chrome.mjs';
 
 const URL_TO_TEST = process.argv[2] || 'http://localhost:8080/';
 const WIDTHS = (process.argv[3] || '1440,1024,768,430,375,320').split(',').map(Number);
 const PORT = 9333;
 
-const CHROME_CANDIDATES = [
-  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-  'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
-];
-
-const exe = CHROME_CANDIDATES.find((p) => existsSync(p));
-if (!exe) {
-  console.error('没有找到 Chrome 或 Edge');
-  process.exit(1);
-}
+const exe = requireChrome();
 
 const chrome = spawn(
   exe,
@@ -32,20 +21,20 @@ const chrome = spawn(
     '--disable-gpu',
     '--no-sandbox',
     `--remote-debugging-port=${PORT}`,
-    '--user-data-dir=' + process.env.TEMP + '\\layout-audit-profile',
+    '--user-data-dir=' + profileDir('layout-audit'),
     'about:blank'
   ],
   { stdio: 'ignore', detached: false }
 );
 
 async function getWsUrl() {
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 60; i++) {
     try {
       const r = await fetch(`http://127.0.0.1:${PORT}/json/version`);
       const j = await r.json();
       if (j.webSocketDebuggerUrl) return j.webSocketDebuggerUrl;
     } catch {}
-    await sleep(300);
+    await sleep(500);
   }
   throw new Error('Chrome 没起来');
 }

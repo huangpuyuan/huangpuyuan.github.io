@@ -5,22 +5,13 @@
  * 用法: node smoke.mjs [baseUrl]
  */
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { requireChrome, profileDir } from './chrome.mjs';
 
 const BASE = process.argv[2] || 'http://localhost:8080';
 const PORT = 9335;
 
-const exe = [
-  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-  'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
-].find((p) => existsSync(p));
-
-if (!exe) {
-  console.error('没有找到 Chrome 或 Edge');
-  process.exit(1);
-}
+const exe = requireChrome();
 
 const chrome = spawn(
   exe,
@@ -30,20 +21,20 @@ const chrome = spawn(
     '--no-sandbox',
     '--hide-scrollbars',
     `--remote-debugging-port=${PORT}`,
-    '--user-data-dir=' + process.env.TEMP + '\\smoke-profile',
+    '--user-data-dir=' + profileDir('smoke'),
     'about:blank'
   ],
   { stdio: 'ignore' }
 );
 
 async function wsUrl() {
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 60; i++) {
     try {
       const r = await fetch(`http://127.0.0.1:${PORT}/json/version`);
       const j = await r.json();
       if (j.webSocketDebuggerUrl) return j.webSocketDebuggerUrl;
     } catch {}
-    await sleep(300);
+    await sleep(500);
   }
   throw new Error('Chrome 没起来');
 }

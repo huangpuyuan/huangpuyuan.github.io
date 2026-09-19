@@ -406,6 +406,19 @@ a.tag:hover {
   font-size: 0.92rem;
 }
 
+/**
+ * 窄屏下表格会撑破版面。
+ * 表格不能直接 overflow-x（那是给块级容器的属性），
+ * 所以用 display:block + overflow-x，让它在自己内部横向滚动。
+ */
+@media (max-width: 640px) {
+  .prose table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
 .prose th,
 .prose td {
   border: 1px solid var(--line);

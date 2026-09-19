@@ -14,3 +14,7 @@ Thumbs.db
 
 # 本地验收截图（不需要入库）
 _shots/
+
+# 崩溃转储与临时输出（跑 Julia / GKS 时偶尔会掉）
+core.*
+gks.svg

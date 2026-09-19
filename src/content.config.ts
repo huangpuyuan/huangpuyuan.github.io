@@ -36,4 +36,25 @@ const ds = defineCollection({
   })
 });
 
-export const collections = { blog, ds };
+/**
+ * Julia 统计模拟笔记（实验室 / Julia）
+ * 和 ds 一样的结构，但 demo 换成「脚本」——浏览器跑不了 Julia，
+ * 所以每篇配的是「代码 + 实测输出 + 讲解」。
+ */
+const julia = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/julia' }),
+  schema: z.object({
+    title: z.string(),
+    order: z.number(),
+    /** 文件名带 .jl 点号会被去掉（dice.jl.md → dicejl），所以显式指定 */
+    slug: z.string().optional(),
+    summary: z.string(),
+    gist: z.string().optional(),
+    complexity: z.array(z.string()).default([]),
+    chapter: z.string().optional(),
+    /** 脚本文件（public/lab/julia 下的相对路径） */
+    script: z.string().optional()
+  })
+});
+
+export const collections = { blog, ds, julia };
