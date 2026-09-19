@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>组合选择器 · 架构讲解</title>
+<style>
+  html, body { margin: 0; }
+  body {
+    font: 15px/1.7 ui-sans-serif, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    color: #0b0f14; background: #fff;
+  }
+  header { padding: 16px 20px; border-bottom: 1px solid #e2e6eb; }
+  header h1 { font-size: 15px; margin: 0; }
+  header .eb {
+    font: 600 11px/1 ui-monospace, Consolas, monospace; letter-spacing: .14em;
+    text-transform: uppercase; color: #9aa2ab; display: block; margin-bottom: 8px;
+  }
+  .note {
+    margin: 0; padding: 14px 20px; background: #fffdf3;
+    border-bottom: 1px solid #ece4cc; font-size: 13px; color: #6b5d33;
+  }
+  .note code { font-family: ui-monospace, Consolas, Menlo, monospace; font-size: 12px;
+    background: #f5efdc; padding: 1px 4px; border-radius: 3px; }
+  .note strong { color: #8a6d1f; }
+  .wrap { padding: 20px; max-width: 900px; }
+  h2 { font-size: 14px; margin: 28px 0 12px; letter-spacing: .02em; }
+  h2:first-child { margin-top: 0; }
+  p { color: #3a4149; font-size: 14px; }
+  .src {
+    margin: 0; padding: 16px 18px; background: #fbfcfd; border: 1px solid #e2e6eb;
+    border-radius: 6px;
+    font: 12.5px/1.8 ui-monospace, SFMono-Regular, Consolas, Menlo, monospace;
+    white-space: pre-wrap; word-break: break-word; color: #3a4149;
+  }
+  .src-label {
+    margin: 18px 0 6px; font: 600 11px/1 ui-monospace, Consolas, monospace;
+    letter-spacing: .12em; text-transform: uppercase; color: #8a929c;
+  }
+  .demo { border: 1px solid #e2e6eb; border-radius: 8px; padding: 18px; background: #fcfdfe; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; align-items: center; }
+  .row .lbl { font-size: 12px; color: #8a929c; min-width: 68px; }
+  .ball {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1.5px solid #d5dae1; background: #fff; cursor: pointer;
+    font: 13px/1 ui-monospace, Consolas, monospace; color: #3a4149;
+    transition: .12s; user-select: none;
+  }
+  .ball:hover { border-color: #9aa2ab; }
+  .ball.on { background: #2f6fed; border-color: #2f6fed; color: #fff; font-weight: 600; }
+  .chip {
+    display: inline-block; padding: 5px 11px; border: 1px solid #d5dae1; border-radius: 999px;
+    background: #fff; cursor: pointer; font-size: 12.5px; color: #3a4149; transition: .12s;
+  }
+  .chip:hover { border-color: #9aa2ab; }
+  .chip.on { background: #0b0f14; border-color: #0b0f14; color: #fff; }
+  .out {
+    margin-top: 14px; padding: 13px 15px; background: #0b0f14; border-radius: 6px;
+    font: 12.5px/1.85 ui-monospace, Consolas, Menlo, monospace; color: #d7dde5;
+    white-space: pre-wrap; min-height: 24px;
+  }
+  .out b { color: #6fd08c; font-weight: 600; }
+  .out .dim { color: #7c8794; }
+  /* 表格：窄屏下不能把页面撑宽。
+     width:100% 只保证「不超过容器」，单元格里的长内容（尤其是不换行的长标识符）
+     仍会顶出最小宽度，所以这里补 table-layout:fixed + overflow-wrap，
+     再包一层可横向滚动的容器，把溢出限制在表格内部而不是整页。 */
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 12px 0; table-layout: fixed; }
+  th, td {
+    border: 1px solid #e2e6eb; padding: 7px 10px; text-align: left;
+    overflow-wrap: anywhere; word-break: break-word; hyphens: auto;
+  }
+  th { background: #f6f8fa; font-weight: 600; font-size: 12.5px; }
+  td code {
+    font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: #b13a3a;
+    overflow-wrap: anywhere;
+  }
+  /* 表格外壳：只有表格自己能横滚，页面本身不滚 */
+  .tablewrap { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tablewrap table { margin: 0; }
+  @media (max-width: 560px) {
+    /* 极窄屏下三个字一组的表头挤在一起很丑，缩小字号和内边距 */
+    table { font-size: 12px; }
+    th, td { padding: 5px 6px; }
+  }
+  .nav { padding: 12px 20px; border-bottom: 1px solid #e2e6eb; font-size: 13px; }
+  .nav a { color: #2f6fed; text-decoration: none; margin-right: 16px; }
+  .nav a:hover { text-decoration: underline; }
+  .timer { font: 600 20px/1.4 ui-monospace, Consolas, monospace; color: #0b0f14; }
+  .timer em { font-style: normal; color: #2f6fed; }
+  
+</style>
+</head>
+<body>
+<header>
+  <span class="eb">ES6 项目 · 架构</span>
+  <h1>组合选择器 · 架构讲解</h1>
+</header>
+<nav class="nav"><a href="/lab/es6/project/demo/">项目演示</a><a href="/lab/es6/project/architecture.html">架构讲解</a><a href="/lab/es6/project/">讲解正文</a></nav>
+
+<div class="note">
+  这一页讲代码怎么组织。原项目的四个模块 + 一个入口，共 555 行。
+  业务内容已抽象化，但<strong>代码结构原样保留</strong>——因为结构才是值得学的东西。
+</div>
+
+<div class="wrap">
+
+  <h2>分层：四个模块各管一摊</h2>
+  <p>
+    这份代码最值得学的不是某个语法点，而是<strong>它把职责切开了</strong>。
+    四个模块互不干扰，任何一个都能单独替换：
+  </p>
+
+  <pre class="src">base.js        状态 + 渲染      持有选中的元素、把自己画到页面上
+calculate.js   纯计算            输入数组和数量，输出所有组合
+interface.js   数据获取          包成 Promise，谁调谁负责后续
+timer.js       纯逻辑            输入结束时间，每秒回调一次
+     ↓
+index.js       组装            把上面四份能力合成一个主类</pre>
+
+  <p>
+    这个切法有两个实际好处：<strong>计算逻辑可以单独测</strong>（<code>combine()</code>
+    不碰 DOM，喂数组就行），<strong>数据来源可以整体替换</strong>
+    （把 jQuery 的 <code>$.ajax</code> 换成 <code>fetch</code>，只动一个文件）。
+  </p>
+
+  <h2>技术上最值得看的一段：mix() 多重继承</h2>
+
+  <p>
+    问题很清楚：<code>Base</code>、<code>Calculate</code>、<code>Interface</code>、
+    <code>Timer</code> 四份能力都需要，但 JavaScript 的 class 只能
+    <code>extends</code> 一个父类。
+  </p>
+
+  <p class="src-label">index.js · 属性搬运</p>
+  <pre class="src">const copyProperties = function (target, source) {
+    for (let key of Reflect.ownKeys(source)) {
+        if (key !== 'constructor' && key !== 'prototype' && key !== 'name') {
+            let desc = Object.getOwnPropertyDescriptor(source, key);
+            Object.defineProperty(target, key, desc);
+        }
+    }
+};</pre>
+
+  <p>
+    <strong>为什么不直接赋值？</strong>这是这段代码的关键。
+    <code>target[key] = source[key]</code> 会把属性<strong>拍平</strong>：
+  </p>
+
+  <div class="tablewrap"><table>
+    <thead><tr><th>属性类型</th><th>直接赋值的结果</th><th>用属性描述符搬运</th></tr></thead>
+    <tbody>
+      <tr><td>getter / setter</td><td>当场求值成普通值，之后不再动态</td><td>保持动态</td></tr>
+      <tr><td><code>writable: false</code></td><td>被强行改成可写</td><td>保持只读</td></tr>
+      <tr><td>不可枚举属性</td><td>变成可枚举（会被 for...in 扫到）</td><td>保持不可枚举</td></tr>
+      <tr><td>Symbol 键</td><td><code>Object.keys()</code> 根本拿不到</td><td><code>Reflect.ownKeys()</code> 能拿到</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>
+    所以这里的 <code>Reflect.ownKeys()</code> + <code>getOwnPropertyDescriptor()</code>
+    + <code>defineProperty()</code> 三件套，是为了<strong>完整保留属性的定义语义</strong>。
+    这是 ES6 反射 API 的一个正经用途，不是炫技。
+  </p>
+
+  <p class="src-label">index.js · 混入与继承</p>
+  <pre class="src">const mix = function (...mixins) {
+    class Mix {}
+    for (let mixin of mixins) {
+        copyProperties(Mix, mixin);                     // 搬静态成员
+        copyProperties(Mix.prototype, mixin.prototype); // 搬实例方法
+    }
+    return Mix;
+};
+
+class Lottery extends mix(Base, Calculate, Interface, Timer) { ... }</pre>
+
+  <p>
+    注意<strong>静态成员和原型方法要分别搬</strong>。漏掉任何一份，就会出现
+    「有的方法能调、有的报 undefined」这类很难查的问题。
+  </p>
+
+  <h2>但这个方案有问题</h2>
+
+  <p>说实话，这种 mixin 写法有几个隐患，看明白就好，不必照搬：</p>
+
+  <div class="tablewrap"><table>
+    <thead><tr><th>问题</th><th>后果</th></tr></thead>
+    <tbody>
+      <tr><td>原型链上没有来源类</td><td><code>instanceof Base</code> 返回 <code>false</code>，类型判断失效</td></tr>
+      <tr><td>同名方法静默覆盖</td><td>谁在后面谁赢，不报错，出问题很难定位</td></tr>
+      <tr><td>属性来源分散在四个文件</td><td>IDE 补全和跳转基本失效</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>
+    现代更常见的做法是<strong>组合优于继承</strong>——把四个模块作为实例属性持有：
+  </p>
+
+  <pre class="src">class Lottery {
+    constructor() {
+        this.timer = new Timer();
+        this.calc  = new Calculate();
+        // ...
+    }
+    tick(end) { return this.timer.countdown(end, ...); }
+}</pre>
+
+  <p>
+    调用链明确，<code>this.calc.combine()</code> 一看就知道从哪来，
+    也不影响 <code>instanceof</code>。代价是要多写几个转发方法。
+    这里保留原实现，是因为它作为「反射 API 的实战用例」确实有教学价值。
+  </p>
+
+  <h2>组合算法：为什么不用公式</h2>
+
+  <p>
+    组合数有现成公式 <code>C(n, k) = n! / (k! × (n-k)!)</code>，一行就能算。
+    但这个项目选择<strong>把每一种组合真的枚举出来</strong>：
+  </p>
+
+  <pre class="src">static combine(arr, size) {
+    let allResult = [];
+    (function f(arr, size, result) {
+        let arrLen = arr.length;
+        if (size > arrLen) return;              // 剩余不够，此路不通
+        if (size === arrLen) {                  // 恰好够，全部拿走
+            allResult.push([].concat(result, arr));
+        } else {
+            for (let i = 0; i < arrLen; i++) {
+                let newResult = [].concat(result);
+                newResult.push(arr[i]);
+                if (size === 1) {
+                    allResult.push(newResult);
+                } else {
+                    let newArr = [].concat(arr);
+                    newArr.splice(0, i + 1);    // ← 关键
+                    f(newArr, size - 1, newResult);
+                }
+            }
+        }
+    })(arr, size, []);
+    return allResult;
+}</pre>
+
+  <p>
+    递归思路：取第 <code>i</code> 个元素之后，<strong>往后</strong>找剩下的——
+    <code>splice(0, i + 1)</code> 把已用过的连同当前这个一起切掉。
+    这样就不会产生 <code>[b, a]</code> 这种和 <code>[a, b]</code> 重复的排列。
+  </p>
+
+  <p>
+    用 IIFE 包起来是因为递归需要一个名字 <code>f</code>，但又不想把它
+    泄露到外层作用域。原注释提到「用 <code>arguments.callee</code> 得写匿名函数」——
+    那个东西在严格模式下早就禁用了，所以这种具名函数表达式才是对的路子。
+  </p>
+
+  <h2>构建链路：从三层工具到一个工具</h2>
+
+  <p>这是 2017 年的构建配置，原样保留在仓库里：</p>
+
+  <div class="tablewrap"><table>
+    <thead><tr><th>当年用的</th><th>做什么</th><th>现在</th></tr></thead>
+    <tbody>
+      <tr><td><code>gulp</code> 3.9</td><td>任务编排：编译、合并、压缩、刷新</td><td>Vite 内置</td></tr>
+      <tr><td><code>webpack</code> 2</td><td>模块打包</td><td>Vite（开发用原生 ESM，构建用 Rollup）</td></tr>
+      <tr><td><code>babel-preset-es2015</code></td><td>把 ES6 编译成 ES5</td><td>基本不需要——浏览器原生支持</td></tr>
+      <tr><td><code>gulp-livereload</code></td><td>改代码自动刷新浏览器</td><td>Vite HMR（热更新，不用刷新）</td></tr>
+      <tr><td><code>babel-polyfill</code></td><td>补运行时缺失的 API</td><td>原生支持，或按需 <code>core-js</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <p>
+    当年为什么需要这三层？因为 <strong>2017 年的浏览器不认识 ES6</strong>。
+    写 <code>let</code> 要编译，写 <code>import</code> 要打包，
+    连 <code>padStart()</code> 这种新方法都要 polyfill 兜底。
+    所以「写 ES6」这件事本身就意味着先配好一套工具链。
+  </p>
+
+  <p>
+    现在这些语法全部进了标准，Chrome 直接认。当年那份
+    <code>gulpfile.babel.js</code> + 7 个 gulp task + webpack 配置，
+    现在一个 <code>&lt;script type="module"&gt;</code> 就能替代——
+    这个站点上的 ES6 演示页就是这么做的：<strong>0 依赖、0 构建</strong>。
+  </p>
+
+  <p>
+    这个变化挺有意思：<strong>当年最难的部分消失了，留下来的是代码结构本身</strong>。
+    分层怎么切、算法怎么写、命名怎么取——这些不随工具链变化。
+  </p>
+
+</div>
+
+
+</body>
+</html>

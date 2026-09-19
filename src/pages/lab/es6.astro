@@ -41,6 +41,10 @@ const shownDemos = demos.filter((d) =>
   exists(d.to) ? true : (console.warn('[es6] 找不到 ' + d.to), false)
 );
 
+// 项目实战：17 个 lesson 之外的单体项目，演示页不在 lessons/ 下，单独列
+const projectTo = 'project/architecture.html';
+const projectOk = exists(projectTo);
+
 const singles = Array.from({ length: 17 }, (_, i) => `lesson${i + 1}`).filter((name) =>
   exists(`lessons/${name}.html`)
 );
@@ -71,13 +75,17 @@ const singles = Array.from({ length: 17 }, (_, i) => `lesson${i + 1}`).filter((n
       无法原生执行</strong>——前者用了至今未进标准的修饰器，后者是 ES 模块语法。
       这两页标明了原因，并附了行为等价的改写。
     </p>
+    <p class="muted">
+      最后还有一篇<strong>项目实战</strong>：十个知识点之外，另有一个 555 行的单体项目，
+      演示页和架构讲解都是<strong>可交互</strong>的。
+    </p>
   </div>
 
   <div class="wrap" style="padding-bottom:96px">
     <section class="block">
       <h2 class="block__title">按顺序读</h2>
       <p class="block__note">
-        17 个 lesson 按主题合成 9 篇讲解。每篇都能独立看，想跳着读也行。
+        17 个 lesson 按主题合成 9 篇讲解，外加 1 篇项目实战。每篇都能独立看，想跳着读也行。
       </p>
       <ul class="rows">
         {
@@ -133,6 +141,60 @@ const singles = Array.from({ length: 17 }, (_, i) => `lesson${i + 1}`).filter((n
           ))
         }
       </ul>
+    </section>
+
+    <section class="block">
+      <h2 class="block__title">项目实战</h2>
+      <p class="block__note">
+        17 个 lesson 都是孤立的语法点。最后这个项目把它们凑起来用了——555 行、五个文件分层，
+        用 <code>Map</code> 存配置表、<code>Set</code> 去重、手写组合枚举，最后用一段反射代码
+        把四块能力拼成一个类。<strong>0 依赖、0 构建</strong>，打开就是源码，跑的就是源码。
+      </p>
+      <p class="block__note">
+        需要说明的是：这个项目当年的业务场景是彩票，搬过来时做了<strong>抽象化处理</strong>——
+        彩种、玩法名称、金额、盈亏计算全部没有保留，只留下软件工程部分。彩票在国内属于特许经营业务，
+        做成公开演示页并不合适；而它真正值得看的是代码怎么组织。
+      </p>
+      <ul class="rows">
+        <li>
+          <a class="row" href="/lab/es6/project/demo/">
+            <span class="row__no">10</span>
+            <span class="row__title">项目演示</span>
+            <span class="row__note">
+              组合运算 / 倒计时 / 数据层，三个区域都能点，控制台零报错
+            </span>
+            <svg class="row__arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+              <path d="M5 11L11 5M6 5h5v5"></path>
+            </svg>
+          </a>
+        </li>
+        <li>
+          <a class="row" href="/lab/es6/project/architecture.html">
+            <span class="row__no">—</span>
+            <span class="row__title">架构讲解</span>
+            <span class="row__note">
+              逐文件拆解：为什么要分层、mixin 是怎么实现的、有什么隐患
+            </span>
+            <svg class="row__arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+              <path d="M5 11L11 5M6 5h5v5"></path>
+            </svg>
+          </a>
+        </li>
+        <li>
+          <a class="row" href="/lab/es6/project/src/base.js">
+            <span class="row__no">—</span>
+            <span class="row__title">源码目录</span>
+            <span class="row__note">
+              <code>base.js</code> / <code>calculate.js</code> / <code>interface.js</code> /
+              <code>timer.js</code> / <code>index.js</code>
+            </span>
+            <svg class="row__arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+              <path d="M5 11L11 5M6 5h5v5"></path>
+            </svg>
+          </a>
+        </li>
+      </ul>
+      {!projectOk && <p class="block__note">（项目产物还没生成，先跑 <code>node scripts/build-es6-project.mjs</code>）</p>}
     </section>
   </div>
 </BaseLayout>
@@ -236,6 +298,12 @@ const singles = Array.from({ length: 17 }, (_, i) => `lesson${i + 1}`).filter((n
     min-width: 0;
     font-size: 0.82rem;
     color: var(--fg-faint);
+  }
+
+  .row__note code {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    color: var(--fg-muted);
   }
 
   .row__arrow {

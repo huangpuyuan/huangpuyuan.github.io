@@ -37,7 +37,8 @@ function labFile(to?: string) {
   return null;
 }
 
-const demoUrl = labFile(entry.data.demo);
+const demoUrl = labFile(entry.data.demo) ?? entry.data.demoPath ?? null;
+const extraUrl = entry.data.extraPath ?? null;
 const pad = (n: number) => String(n).padStart(2, '0');
 ---
 
@@ -94,14 +95,25 @@ const pad = (n: number) => String(n).padStart(2, '0');
         <div class="acts">
           <a class="act" href={demoUrl}>
             <span class="act__k">在浏览器里跑</span>
-            <span class="act__v">{entry.data.demo} —— 打开就跑，顶部是 console 输出镜像</span>
-          </a>
-          <div class="act act--static">
-            <span class="act__k">说明</span>
             <span class="act__v">
-              这些演示页是独立 HTML，不带站点导航，返回按左下角的浮标
+              {entry.data.demoPath
+                ? entry.data.demoPath + ' —— 打开就跑，三个区域都能点'
+                : entry.data.demo + ' —— 打开就跑，顶部是 console 输出镜像'}
             </span>
-          </div>
+          </a>
+          {extraUrl ? (
+            <a class="act" href={extraUrl}>
+              <span class="act__k">{entry.data.extraLabel ?? '另一个入口'}</span>
+              <span class="act__v">{extraUrl} —— 逐文件讲这份代码是怎么组织的</span>
+            </a>
+          ) : (
+            <div class="act act--static">
+              <span class="act__k">说明</span>
+              <span class="act__v">
+                这些演示页是独立 HTML，不带站点导航，返回按左下角的浮标
+              </span>
+            </div>
+          )}
         </div>
       )
     }

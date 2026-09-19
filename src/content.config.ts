@@ -98,8 +98,14 @@ const es6 = defineCollection({
     minutes: z.number().optional(),
     tag: z.string().optional(),
     updated: z.string().optional(),
-    /** 演示页（public/lab/es6 下的相对路径） */
+    /** 演示页（public/lab/es6/lessons 下的相对路径） */
     demo: z.string().optional(),
+    /** 站点根路径形式的演示页，给不在 lessons/ 下的页面用（如项目实战） */
+    demoPath: z.string().optional(),
+    /** 站点根路径形式的第二入口，列表页和正文末尾都放 */
+    extraPath: z.string().optional(),
+    /** extraPath 的显示名 */
+    extraLabel: z.string().optional(),
     /** 对应的 lesson 编号，如 '1,2,3' */
     lessons: z.string().optional()
   })
