@@ -29,6 +29,27 @@
 
     graph.bfs(myVertices[0], printNode);
 
+    console.log('********* dfs ***********');
+
+    graph.dfs(myVertices[0], printNode);
+
+    console.log('********* dfs 的发现/离开时间 ***********');
+
+    var dfsResult = graph.DFS(printNode);
+
+    //discovery / finished / predecessors 这些数组是用顶点名当下标的，
+    //直接打印会显示成空数组，得按顶点顺序取出来看
+    var dfsTable = [];
+    for (i = 0; i < myVertices.length; i++) {
+        var vv = myVertices[i];
+        dfsTable.push(
+            vv + '：发现于 ' + dfsResult.discovery[vv] +
+            '，离开于 ' + dfsResult.finished[vv] +
+            '，从 ' + dfsResult.predecessors[vv] + ' 过来'
+        );
+    }
+    console.log(dfsTable.join('\n'));
+
     console.log('********* sorthest path - BFS ***********');
     var shortestPathA = graph.BFS(myVertices[0]);
     console.log(shortestPathA.distances);

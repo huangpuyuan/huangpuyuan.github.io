@@ -58,15 +58,12 @@ const SKIP = /^(?:#|mailto:|tel:|javascript:|data:)/i;
 const TEMPLATE = /\{\{|\}\}|\$\{/;
 
 /**
- * 已知的失效链接：2017 年原代码里就缺这些文件，不是搬运弄丢的。
- * 按「只做加法」的原则没删，列在这里单独报，不计入退出码。
- * 想让它们彻底消失，把老页面里对应的引用行删掉，然后从这里划掉。
+ * 已知的失效链接白名单。
+ * 2026-09-19 已把老页面里的引用清理干净（多余的 style.css link、没做完的 Demo2/3/4），
+ * 白名单清空，现在任何站内死链都会计入退出码。
+ * 以后若再发现历史遗留死链，先修页面，不要往这里加。
  */
 const KNOWN_BROKEN = new Set([
-  '/lab/frontend/css-plotting/parellelogram/style.css',
-  '/lab/frontend/exercises/CSS3_Slides/index2.html',
-  '/lab/frontend/exercises/CSS3_Slides/index3.html',
-  '/lab/frontend/exercises/CSS3_Slides/index4.html'
 ]);
 
 /**
