@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>迭代器 · ES6 演示</title>
+<style>
+  html, body { margin: 0; }
+  body {
+    font: 15px/1.7 ui-sans-serif, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    color: #0b0f14; background: #fff;
+  }
+  .note {
+    margin: 0; padding: 14px 20px; background: #fffdf3;
+    border-bottom: 1px solid #ece4cc; font-size: 13px; color: #6b5d33;
+  }
+  .note code { font-family: ui-monospace, Consolas, Menlo, monospace; font-size: 12px; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+  .src {
+    margin: 0; padding: 18px 20px; background: #fbfcfd; border-left: 1px solid #e2e6eb;
+    font: 12.5px/1.8 ui-monospace, SFMono-Regular, Consolas, Menlo, monospace;
+    white-space: pre-wrap; word-break: break-word; color: #3a4149;
+    overflow-x: auto; border-bottom: 1px solid #e2e6eb;
+  }
+  .src-label {
+    margin: 0; padding: 7px 20px; background: #f0f2f5; border-bottom: 1px solid #e2e6eb;
+    font: 600 11px/1 ui-monospace, Consolas, monospace; letter-spacing: .12em;
+    text-transform: uppercase; color: #8a929c;
+  }
+  .demo-body { padding: 0; }
+  h1 { font-size: 15px; margin: 0; }
+  header { padding: 16px 20px; border-bottom: 1px solid #e2e6eb; }
+  header .eb { font: 600 11px/1 ui-monospace, Consolas, monospace; letter-spacing: .14em;
+    text-transform: uppercase; color: #9aa2ab; display: block; margin-bottom: 8px; }
+  .payload > p { margin: 12px 20px; color: #6b7280; font-size: 13px; }
+</style>
+</head>
+<body>
+<!-- data-lab-console -->
+<script data-lab-console>
+(function () {
+  var lines = [];
+  var box = null;
+
+  function ensure() {
+    if (box && box.isConnected) return box;
+    box = document.createElement('pre');
+    box.style.cssText =
+      'margin:0;padding:18px 20px;' +
+      'font:13px/1.75 ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,Menlo,' +
+      '"DejaVu Sans Mono","Segoe UI Symbol","Apple Symbols",monospace;' +
+      'white-space:pre-wrap;word-break:break-word;color:#0b0f14;background:#f6f7f9;' +
+      'border-bottom:1px solid #e2e6eb;min-height:34px';
+    var host = document.body || document.documentElement;
+    host.insertBefore(box, host.firstChild);
+    return box;
+  }
+
+  function fmt(v) {
+    var seen = [];
+    function walk(x, d, inContainer) {
+      if (x === null) return 'null';
+      var t = typeof x;
+      // 顶层参数直接打印字符串本身；嵌在数组/Set/对象里的字符串加引号，
+      // 否则 Set 里的 '2' 和数字 2 会长得一模一样（lesson10 讲的正是这个区别）
+      if (t === 'string') return inContainer ? JSON.stringify(x) : x;
+      if (t === 'number' || t === 'boolean' || t === 'bigint') return String(x);
+      if (t === 'undefined') return 'undefined';
+      if (t === 'function') return 'f ' + (x.name || 'anonymous');
+      if (x instanceof Error) return x.name + ': ' + x.message;
+      if (d > 5) return '...';
+      // 只对「对象」做循环引用检测 —— 原始值不参与
+      if (t === 'object') {
+        if (seen.indexOf(x) > -1) return '[Circular]';
+        seen.push(x);
+      }
+      if (Array.isArray(x)) {
+        return '[' + x.map(function (i) { return walk(i, d + 1, true); }).join(', ') + ']';
+      }
+      if (typeof Set !== 'undefined' && x instanceof Set) {
+        return 'Set{' + Array.from(x).map(function (i) { return walk(i, d + 1, true); }).join(', ') + '}';
+      }
+      if (typeof Map !== 'undefined' && x instanceof Map) {
+        return 'Map{' + Array.from(x).map(function (kv) {
+          return walk(kv[0], d + 1, true) + ' => ' + walk(kv[1], d + 1, true);
+        }).join(', ') + '}';
+      }
+      return '{' + Object.keys(x).map(function (k) {
+        return k + ': ' + walk(x[k], d + 1, true);
+      }).join(', ') + '}';
+    }
+    return walk(v, 0, false);
+  }
+
+  ['log', 'info', 'warn', 'error'].forEach(function (kind) {
+    var orig = console[kind] ? console[kind].bind(console) : function () {};
+    console[kind] = function () {
+      var args = Array.prototype.slice.call(arguments);
+      lines.push(args.map(fmt).join(' '));
+      try {
+        var b = ensure();
+        b.textContent = lines.join('\n');
+        b.scrollTop = b.scrollHeight;
+      } catch (e) {}
+      orig.apply(null, args);
+    };
+  });
+
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      if (!lines.length) {
+        ensure().textContent = '(这段代码跑完了，但没有任何 console 输出)';
+      }
+    }, 120);
+  });
+})();
+</script>
+<header><span class="eb">ES6 语法练习 · 演示</span><h1>迭代器</h1></header>
+<p class="note">这一页包含 lesson14 的原始代码，跑在浏览器里。顶部灰条是 <code>console.log</code> 的输出镜像——这些脚本只会写日志，不加镜像就是一片空白。</p>
+<div class="demo-body"><p class="src-label">lesson14.js</p>
+<pre class="src">{
+    let arr=['hello','world'];
+    let map = arr[Symbol.iterator]();
+
+    console.log(map.next());
+    console.log(map.next());
+    console.log(map.next());
+}
+{
+    let obj={
+        start:[1,3,2],
+        end:[7,9,8],
+        [Symbol.iterator](){
+            let self = this;
+            let index = 0;
+            let arr=self.start.concat(self.end);
+            let len=arr.length;
+            return {
+                next(){
+                    if(index&lt;len){
+                        return{
+                            value:arr[index++],
+                            done:false
+                      };
+                    }else {
+                        return{
+                            value:arr[index++],
+                            done:true
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 对象能使用for of 循环 定义Interator接口
+
+    for (let key of obj ){
+        console.log(key);
+    }
+}
+{
+    let arr=['hello','world'];
+    for (let value of arr){
+        console.log('value',value);
+    }
+}
+</pre>
+<script>
+{
+    let arr=['hello','world'];
+    let map = arr[Symbol.iterator]();
+
+    console.log(map.next());
+    console.log(map.next());
+    console.log(map.next());
+}
+{
+    let obj={
+        start:[1,3,2],
+        end:[7,9,8],
+        [Symbol.iterator](){
+            let self = this;
+            let index = 0;
+            let arr=self.start.concat(self.end);
+            let len=arr.length;
+            return {
+                next(){
+                    if(index<len){
+                        return{
+                            value:arr[index++],
+                            done:false
+                      };
+                    }else {
+                        return{
+                            value:arr[index++],
+                            done:true
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 对象能使用for of 循环 定义Interator接口
+
+    for (let key of obj ){
+        console.log(key);
+    }
+}
+{
+    let arr=['hello','world'];
+    for (let value of arr){
+        console.log('value',value);
+    }
+}
+
+</script>
+</div>
+
+<!-- data-lab-backlink -->
+<a data-lab-backlink href="../" title="返回ES6 语法练习" style="position:fixed;left:16px;bottom:16px;z-index:2147483647;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:rgba(15,20,28,.82);color:#fff;font:500 13px/1 ui-sans-serif,-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)">← ES6 语法练习</a>
+</body>
+</html>

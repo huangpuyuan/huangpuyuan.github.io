@@ -21,7 +21,8 @@ const MARK = 'data-lab-backlink';
 /** 分区 -> 浮标文案（分区索引页由 Astro 生成，不在 public 里） */
 const SECTIONS = [
   { dir: 'frontend', label: '前端练习集' },
-  { dir: 'datastructures', label: '数据结构练习' }
+  { dir: 'datastructures', label: '数据结构练习' },
+  { dir: 'es6', label: 'ES6 语法练习' }
 ];
 
 function walk(dir, out = []) {

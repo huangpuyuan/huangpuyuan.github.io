@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>lesson16 · ES6 语法练习</title>
+<style>
+  html, body { margin: 0; }
+  body {
+    font: 15px/1.7 ui-sans-serif, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    color: #0b0f14; background: #fff;
+  }
+  .note {
+    margin: 0; padding: 14px 20px; background: #fffdf3;
+    border-bottom: 1px solid #ece4cc; font-size: 13px; color: #6b5d33;
+  }
+  .note code { font-family: ui-monospace, Consolas, Menlo, monospace; font-size: 12px; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+  .src {
+    margin: 0; padding: 18px 20px; background: #fbfcfd; border-left: 1px solid #e2e6eb;
+    font: 12.5px/1.8 ui-monospace, SFMono-Regular, Consolas, Menlo, monospace;
+    white-space: pre-wrap; word-break: break-word; color: #3a4149;
+    overflow-x: auto; border-bottom: 1px solid #e2e6eb;
+  }
+  .src-label {
+    margin: 0; padding: 7px 20px; background: #f0f2f5; border-bottom: 1px solid #e2e6eb;
+    font: 600 11px/1 ui-monospace, Consolas, monospace; letter-spacing: .12em;
+    text-transform: uppercase; color: #8a929c;
+  }
+  .demo-body { padding: 0; }
+  h1 { font-size: 15px; margin: 0; }
+  header { padding: 16px 20px; border-bottom: 1px solid #e2e6eb; }
+  header .eb { font: 600 11px/1 ui-monospace, Consolas, monospace; letter-spacing: .14em;
+    text-transform: uppercase; color: #9aa2ab; display: block; margin-bottom: 8px; }
+  .payload > p { margin: 12px 20px; color: #6b7280; font-size: 13px; }
+</style>
+</head>
+<body>
+<!-- data-lab-console -->
+<script data-lab-console>
+(function () {
+  var lines = [];
+  var box = null;
+
+  function ensure() {
+    if (box && box.isConnected) return box;
+    box = document.createElement('pre');
+    box.style.cssText =
+      'margin:0;padding:18px 20px;' +
+      'font:13px/1.75 ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,Menlo,' +
+      '"DejaVu Sans Mono","Segoe UI Symbol","Apple Symbols",monospace;' +
+      'white-space:pre-wrap;word-break:break-word;color:#0b0f14;background:#f6f7f9;' +
+      'border-bottom:1px solid #e2e6eb;min-height:34px';
+    var host = document.body || document.documentElement;
+    host.insertBefore(box, host.firstChild);
+    return box;
+  }
+
+  function fmt(v) {
+    var seen = [];
+    function walk(x, d, inContainer) {
+      if (x === null) return 'null';
+      var t = typeof x;
+      // 顶层参数直接打印字符串本身；嵌在数组/Set/对象里的字符串加引号，
+      // 否则 Set 里的 '2' 和数字 2 会长得一模一样（lesson10 讲的正是这个区别）
+      if (t === 'string') return inContainer ? JSON.stringify(x) : x;
+      if (t === 'number' || t === 'boolean' || t === 'bigint') return String(x);
+      if (t === 'undefined') return 'undefined';
+      if (t === 'function') return 'f ' + (x.name || 'anonymous');
+      if (x instanceof Error) return x.name + ': ' + x.message;
+      if (d > 5) return '...';
+      // 只对「对象」做循环引用检测 —— 原始值不参与
+      if (t === 'object') {
+        if (seen.indexOf(x) > -1) return '[Circular]';
+        seen.push(x);
+      }
+      if (Array.isArray(x)) {
+        return '[' + x.map(function (i) { return walk(i, d + 1, true); }).join(', ') + ']';
+      }
+      if (typeof Set !== 'undefined' && x instanceof Set) {
+        return 'Set{' + Array.from(x).map(function (i) { return walk(i, d + 1, true); }).join(', ') + '}';
+      }
+      if (typeof Map !== 'undefined' && x instanceof Map) {
+        return 'Map{' + Array.from(x).map(function (kv) {
+          return walk(kv[0], d + 1, true) + ' => ' + walk(kv[1], d + 1, true);
+        }).join(', ') + '}';
+      }
+      return '{' + Object.keys(x).map(function (k) {
+        return k + ': ' + walk(x[k], d + 1, true);
+      }).join(', ') + '}';
+    }
+    return walk(v, 0, false);
+  }
+
+  ['log', 'info', 'warn', 'error'].forEach(function (kind) {
+    var orig = console[kind] ? console[kind].bind(console) : function () {};
+    console[kind] = function () {
+      var args = Array.prototype.slice.call(arguments);
+      lines.push(args.map(fmt).join(' '));
+      try {
+        var b = ensure();
+        b.textContent = lines.join('\n');
+        b.scrollTop = b.scrollHeight;
+      } catch (e) {}
+      orig.apply(null, args);
+    };
+  });
+
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      if (!lines.length) {
+        ensure().textContent = '(这段代码跑完了，但没有任何 console 输出)';
+      }
+    }, 120);
+  });
+})();
+</script>
+<header><span class="eb">ES6 语法练习 · lesson16</span><h1>lesson16.js</h1></header>
+<p class="note">这一课无法在浏览器里原生执行 —— 详见下方说明与等价改写。</p>
+<p class="src-label">lesson16.js · 原始源码（不能原生执行）</p>
+<pre class="src">{
+    let readonly =function (target,name,descriptor) {
+        descriptor.writable=false;
+        return descriptor;
+    };
+
+
+    class Test{
+        @readonly
+        time(){
+            return '2017-03-11'
+        }
+    }
+
+    let test =new Test();
+
+    console.log(test.time());
+    // test.time=function () {
+    //     console.log('reset time');
+    // };
+    // console.log(test.time());
+}
+{
+    let typename=function (target,name,descriptor) {
+        target.myname = 'hello';
+    };
+
+    @typename
+    class  Test{
+
+    }
+
+    console.log('类修饰符号',Test.myname);
+
+
+}
+{
+    //第三方修饰器的js库：core-decorators; npm install core-decorator
+    // 日志系统 日志统计 与点击
+
+    let log=(type)=&gt;{
+        return function (target,name,decriptor) {
+            let src_method = decriptor.value;
+            decriptor.value =(...arg)=&gt;{
+                src_method.apply(target,arg);
+                console.info(`log ${type}`);
+            }
+        }
+    };
+
+    class AD{
+        @log('show')
+        show(){
+            console.info('ad is show');
+        }
+        @log('click')
+        click(){
+            console.info('ad is click');
+        }
+    }
+
+    let ad = new AD()
+    ad.show();
+    ad.click();
+}
+
+
+
+
+
+
+
+</pre>
+<p class="note">⚠️ 这段代码用了<strong>修饰器（Decorator）</strong>——<code>@readonly</code>、<code>@typename</code>、<code>@log</code>。修饰器是 Stage 3 提案，<strong>至今没有进入 ECMAScript 标准</strong>，浏览器原生不支持，裸 <code>&lt;script&gt;</code> 里会直接抛 SyntaxError。2017 年那会儿靠的是 babel 的 <code>transform-decorators</code> 插件把它编译掉。</p>
+<p class="src-label">等价的、能跑的写法（行为一致）</p>
+<pre class="src">// 修饰器做得到的三件事，用标准语法手写一遍（效果一样，不需要编译）
+
+// ① 把方法设为不可写 —— 对应 @readonly
+{
+  class Test {
+    time() { return '2017-03-11'; }
+  }
+  // 修饰器做的事：拿到描述符，把 writable 改成 false
+  Object.defineProperty(Test.prototype, 'time', {
+    value: Test.prototype.time,
+    writable: false,
+    configurable: true,
+    enumerable: false
+  });
+
+  let test = new Test();
+  console.log('time() =', test.time());
+
+  // 试着改它：严格模式下抛错，非严格模式静默失败
+  try {
+    test.time = function () { console.log('reset time'); };
+    console.log('改写后仍为：', test.time());
+  } catch (e) {
+    console.log('改写被拒绝：', e.name + ': ' + e.message);
+  }
+}
+
+// ② 给类挂静态属性 —— 对应 @typename
+{
+  class Test {}
+  // @typename 做的就是把 target.myname 赋成 'hello'
+  Test.myname = 'hello';
+  console.log('类静态属性 Test.myname =', Test.myname);
+}
+
+// ③ 给方法包一层日志 —— 对应 @log('show') / @log('click')
+{
+  function log(type) {
+    // 修饰器拿到 (target, name, descriptor)，这里改成包装原型方法
+    return function (target, name) {
+      const src = target[name];
+      target[name] = function (...args) {
+        const r = src.apply(this, args);
+        console.info(`log ${type}`);
+        return r;
+      };
+    };
+  }
+
+  class AD {
+    show() { console.info('ad is show'); }
+    click() { console.info('ad is click'); }
+  }
+
+  // 等价于把 @log('show') 写在 show 上面
+  log('show')(AD.prototype, 'show');
+  log('click')(AD.prototype, 'click');
+
+  const ad = new AD();
+  ad.show();
+  ad.click();
+}
+</pre>
+<script>
+// 修饰器做得到的三件事，用标准语法手写一遍（效果一样，不需要编译）
+
+// ① 把方法设为不可写 —— 对应 @readonly
+{
+  class Test {
+    time() { return '2017-03-11'; }
+  }
+  // 修饰器做的事：拿到描述符，把 writable 改成 false
+  Object.defineProperty(Test.prototype, 'time', {
+    value: Test.prototype.time,
+    writable: false,
+    configurable: true,
+    enumerable: false
+  });
+
+  let test = new Test();
+  console.log('time() =', test.time());
+
+  // 试着改它：严格模式下抛错，非严格模式静默失败
+  try {
+    test.time = function () { console.log('reset time'); };
+    console.log('改写后仍为：', test.time());
+  } catch (e) {
+    console.log('改写被拒绝：', e.name + ': ' + e.message);
+  }
+}
+
+// ② 给类挂静态属性 —— 对应 @typename
+{
+  class Test {}
+  // @typename 做的就是把 target.myname 赋成 'hello'
+  Test.myname = 'hello';
+  console.log('类静态属性 Test.myname =', Test.myname);
+}
+
+// ③ 给方法包一层日志 —— 对应 @log('show') / @log('click')
+{
+  function log(type) {
+    // 修饰器拿到 (target, name, descriptor)，这里改成包装原型方法
+    return function (target, name) {
+      const src = target[name];
+      target[name] = function (...args) {
+        const r = src.apply(this, args);
+        console.info(`log ${type}`);
+        return r;
+      };
+    };
+  }
+
+  class AD {
+    show() { console.info('ad is show'); }
+    click() { console.info('ad is click'); }
+  }
+
+  // 等价于把 @log('show') 写在 show 上面
+  log('show')(AD.prototype, 'show');
+  log('click')(AD.prototype, 'click');
+
+  const ad = new AD();
+  ad.show();
+  ad.click();
+}
+
+</script>
+
+<!-- data-lab-backlink -->
+<a data-lab-backlink href="../" title="返回ES6 语法练习" style="position:fixed;left:16px;bottom:16px;z-index:2147483647;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:rgba(15,20,28,.82);color:#fff;font:500 13px/1 ui-sans-serif,-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;text-decoration:none;box-shadow:0 4px 18px rgba(0,0,0,.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)">← ES6 语法练习</a>
+</body>
+</html>

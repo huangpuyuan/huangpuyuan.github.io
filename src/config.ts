@@ -127,6 +127,26 @@ export const labs = [
     year: '2019 / 2026',
     parts: ['蒙特卡洛', '概率模拟', '性能实测', '绘图'],
     note: '浏览器跑不了 Julia，所以每篇做成了「代码 + 实测输出 + 讲解」。'
+  },
+  {
+    slug: 'python',
+    title: 'Python 学习笔记',
+    desc: '两段学习痕迹：2018 年学语法写的猜数字游戏和二分法解方程，2024 年做数据分析写的 NumPy、Pandas 和 KNN 分类器。中间隔了六年。',
+    href: '/lab/python/',
+    tag: 'Python',
+    year: '2018 / 2024',
+    parts: ['NumPy 广播', 'Pandas 清洗', '手写 KNN', '线性回归'],
+    note: '每个脚本都真跑过一遍，文章里引的数字来自实际输出；图是跑出来直接存成 SVG 的。'
+  },
+  {
+    slug: 'es6',
+    title: 'ES6 语法练习',
+    desc: '跟着教程从 let/const 一路写到 Generator，17 个 lesson 都在浏览器里能直接跑。原来的构建栈是 gulp 3 + webpack 2，现在只需要一个 <script> 标签。',
+    href: '/lab/es6/',
+    tag: 'JavaScript',
+    year: '2017 / 2026',
+    parts: ['变量与作用域', '解构赋值', 'Set 与 Map', 'Promise', 'Generator'],
+    note: '每篇都配一个演示页，点开就能在浏览器里看到 console 输出。'
   }
 ] as const;
 
