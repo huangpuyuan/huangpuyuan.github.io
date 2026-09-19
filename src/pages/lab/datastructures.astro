@@ -1,8 +1,9 @@
 ---
-import { existsSync, statSync } from 'node:fs';
+import { statSync } from 'node:fs';
 import path from 'node:path';
 import { getCollection } from 'astro:content';
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import LabListPage from '../../components/LabListPage.astro';
+import type { LabSection } from '../../components/LabListPage.astro';
 
 const ROOT = path.join(process.cwd(), 'public', 'lab', 'datastructures');
 
@@ -55,309 +56,53 @@ function keep(list: Entry[]) {
 
 const shownDemos = keep(demos);
 const shownSources = keep(sources);
+
+/** 分区顺序：演示排最前（点开就能看），讲解其次，源码最后 */
+const sections: LabSection[] = [
+  {
+    kind: 'rows',
+    title: '演示',
+    note: '点开就能看，行尾是对应的实现文件名。带「讲解」标记的，可以先看步骤拆解再回来点开。',
+    links: shownDemos.map((d) => {
+      const g = guideByDemo.get(d.to);
+      return {
+        href: `/lab/datastructures/${encodeURI(d.to)}`,
+        title: d.title,
+        note: d.note,
+        code: d.code,
+        pill: g ? { href: `/lab/datastructures/${g.id}/`, label: '讲解' } : undefined,
+        // 这个区有的行有「讲解」胶囊、有的没有，全排成两栏才对得齐
+        twoCol: true
+      };
+    })
+  },
+  {
+    kind: 'rows',
+    title: '跟着做一遍',
+    note: '八个结构，每个一份步骤拆解。从「解决什么问题」开始，一步一步把代码写出来，最后说清楚复杂度和容易踩的坑。看完想动手，再点开对应的演示页对着跑。',
+    links: guides.map((g, i) => ({
+      href: `/lab/datastructures/${g.id}/`,
+      no: pad(i + 1),
+      title: g.data.title,
+      note: g.data.gist ?? g.data.summary
+    }))
+  },
+  {
+    kind: 'mini',
+    title: '源码',
+    note: '直接点开是文本，浏览器会原样显示。',
+    links: shownSources.map((s) => ({ href: `/lab/datastructures/${encodeURI(s.to)}`, title: s.title }))
+  }
+];
 ---
 
-<BaseLayout
+<LabListPage
   title="数据结构练习"
   description="读《学习 JavaScript 数据结构与算法》时手写的基础数据结构，附能在浏览器里直接跑的演示页。"
->
-  <div class="wrap page-head">
-    <span class="eyebrow">LAB / DATA STRUCTURES</span>
-    <h1>数据结构练习</h1>
-    <p class="muted">
-      读《学习 JavaScript 数据结构与算法》时手写了一遍基础结构。源码就是普通的 <code>.js</code> 文件，
-      下面这些演示页是我另外写的，用来验证实现对不对。
-    </p>
-    <p class="muted">
-      演示页的结果原本只打在控制台里，所以当年直接打开是一片空白。现在给它们加了一层输出镜像，
-      结果会直接画在页面上，不用按 F12 了。
-    </p>
-    <p class="muted">
-      另外补了一套「跟着做一遍」，把八个结构从思路到代码一步步拆开。当年看书时最想要的就是这种版本。
-    </p>
-  </div>
-
-  <div class="wrap" style="padding-bottom:96px">
-    <section class="block">
-      <h2 class="block__title">跟着做一遍</h2>
-      <p class="block__note">
-        八个结构，每个一份步骤拆解。从「解决什么问题」开始，一步一步把代码写出来，最后说清楚复杂度和容易踩的坑。
-        看完想动手，再点开对应的演示页对着跑。
-      </p>
-      <ul class="rows">
-        {
-          guides.map((g, i) => (
-            <li>
-              <a class="row" href={`/lab/datastructures/${g.id}/`}>
-                <span class="row__no">{pad(i + 1)}</span>
-                <span class="row__title">{g.data.title}</span>
-                <span class="row__note">{g.data.gist ?? g.data.summary}</span>
-                <svg class="row__arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
-                  <path d="M5 11L11 5M6 5h5v5"></path>
-                </svg>
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </section>
-
-    <section class="block">
-      <h2 class="block__title">演示</h2>
-      <p class="block__note">点开就能看，标题右边是对应的实现文件名。带「讲解」标记的，可以先看步骤拆解再回来点开。</p>
-      <ul class="rows">
-        {
-          shownDemos.map((d) => {
-            const g = guideByDemo.get(d.to);
-            return (
-              <li class="item">
-                <a class="row" href={`/lab/datastructures/${encodeURI(d.to)}`}>
-                  <span class="row__title">{d.title}</span>
-                  {d.note && <span class="row__note">{d.note}</span>}
-                  {d.code && <span class="row__code">{d.code}</span>}
-                  <svg class="row__arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
-                    <path d="M5 11L11 5M6 5h5v5"></path>
-                  </svg>
-                </a>
-                {g && (
-                  <a class="pill" href={`/lab/datastructures/${g.id}/`}>
-                    讲解
-                  </a>
-                )}
-              </li>
-            );
-          })
-        }
-      </ul>
-    </section>
-
-    <section class="block">
-      <h2 class="block__title">源码</h2>
-      <p class="block__note">直接点开是文本，浏览器会原样显示。</p>
-      <ul class="mini">
-        {
-          shownSources.map((s) => (
-            <li>
-              <a href={`/lab/datastructures/${encodeURI(s.to)}`}>
-                <span>{s.title}</span>
-                <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
-                  <path d="M5 11L11 5M6 5h5v5"></path>
-                </svg>
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </section>
-  </div>
-</BaseLayout>
-
-<style>
-  .page-head {
-    padding-block: 64px 20px;
-  }
-
-  .page-head h1 {
-    font-size: clamp(2.1rem, 6vw, 2.8rem);
-    margin: 0 0 12px;
-    letter-spacing: -0.035em;
-  }
-
-  .page-head p {
-    margin: 0 0 10px;
-    max-width: 46em;
-    font-size: 0.95rem;
-    line-height: 1.85;
-  }
-
-  .page-head code {
-    font-family: var(--font-mono);
-    font-size: 0.88em;
-    background: var(--bg-sunken);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    padding: 1px 6px;
-  }
-
-  .block + .block {
-    margin-top: 52px;
-    padding-top: 44px;
-    border-top: 1px solid var(--line);
-  }
-
-  .block__title {
-    margin: 0;
-    font-size: 1.2rem;
-    letter-spacing: -0.02em;
-  }
-
-  .block__note {
-    margin: 8px 0 20px;
-    max-width: 46em;
-    font-size: 0.87rem;
-    line-height: 1.8;
-    color: var(--fg-muted);
-  }
-
-  .rows {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .rows li + li {
-    border-top: 1px solid var(--line);
-  }
-
-  .row {
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
-    padding: 14px 12px;
-    margin-inline: -12px;
-    border-radius: var(--radius-sm);
-    color: var(--fg);
-    transition: background-color 0.18s ease;
-  }
-
-  .row:hover {
-    background: var(--bg-sunken);
-  }
-
-  .row__title {
-    flex-shrink: 0;
-    font-size: 0.95rem;
-    transition: color 0.18s ease;
-  }
-
-  .row__no {
-    flex-shrink: 0;
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    color: var(--fg-faint);
-  }
-
-  .row:hover .row__title {
-    color: var(--accent);
-  }
-
-  .row__note {
-    flex: 1;
-    min-width: 0;
-    font-size: 0.82rem;
-    color: var(--fg-faint);
-  }
-
-  .row__code {
-    flex-shrink: 0;
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    color: var(--fg-faint);
-  }
-
-  .row__arrow {
-    flex-shrink: 0;
-    align-self: center;
-    color: var(--fg-faint);
-    transition: color 0.18s ease, transform 0.18s ease;
-  }
-
-  .row:hover .row__arrow {
-    color: var(--accent);
-    transform: translate(2px, -2px);
-  }
-
-  /* 演示行右边挂一个「讲解」入口，用 li 扛 hover，避免 <a> 套 <a> */
-  .item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding-inline: 12px;
-    margin-inline: -12px;
-    border-radius: var(--radius-sm);
-    transition: background-color 0.18s ease;
-  }
-
-  .item:hover {
-    background: var(--bg-sunken);
-  }
-
-  .item > .row {
-    flex: 1;
-    min-width: 0;
-    padding-inline: 0;
-    margin-inline: 0;
-  }
-
-  .item > .row:hover {
-    background: none;
-  }
-
-  .pill {
-    flex-shrink: 0;
-    font-size: 0.74rem;
-    color: var(--fg-muted);
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 3px 11px;
-    white-space: nowrap;
-    transition: all 0.18s ease;
-  }
-
-  .pill:hover {
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-
-  .mini {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 2px;
-  }
-
-  .mini a {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 7px 12px;
-    margin-inline: -12px;
-    border-radius: var(--radius-sm);
-    font-size: 0.87rem;
-    line-height: 1.45;
-    color: var(--fg-muted);
-    transition: all 0.16s ease;
-  }
-
-  .mini a svg {
-    flex-shrink: 0;
-    color: var(--fg-faint);
-    opacity: 0;
-    transition: all 0.16s ease;
-  }
-
-  .mini a:hover {
-    background: var(--bg-sunken);
-    color: var(--accent);
-  }
-
-  .mini a:hover svg {
-    opacity: 1;
-    color: var(--accent);
-  }
-
-  @media (min-width: 640px) {
-    .mini {
-      grid-template-columns: repeat(2, 1fr);
-      column-gap: 32px;
-    }
-  }
-
-  @media (max-width: 640px) {
-    .row__note {
-      display: none;
-    }
-  }
-</style>
+  eyebrow="LAB / DATA STRUCTURES"
+  intro={[
+    '读《学习 JavaScript 数据结构与算法》时手写了一遍基础结构。源码就是普通的 <code>.js</code> 文件，下面这些演示页是另外写的，用来验证实现对不对。演示页的结果原本只打在控制台里，所以当年直接打开是一片空白——现在给它们加了一层输出镜像，结果会直接画在页面上，不用按 F12 了。',
+    '另外补了一套「跟着做一遍」，把八个结构从思路到代码一步步拆开。当年看书时最想要的就是这种版本。'
+  ]}
+  sections={sections}
+/>

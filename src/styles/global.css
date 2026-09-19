@@ -179,6 +179,163 @@ input[type='search']::-webkit-search-decoration {
   padding-block: 92px;
 }
 
+/* ---------- 文章页版式（博客与实验室讲解页共用）----------
+   这一层原本只写在 blog/[...slug].astro 的 scoped style 里，所以实验室的
+   讲解页一直是 1140px 通栏，一行太长。提到全局后两边共用同一份，
+   视觉上的「统一」是样式层面的，以后不会再各自漂移。
+   注意：这里只放「页面骨架」相关的类，正文排版仍然由下面的 .prose 负责。 */
+
+/* 正文列宽。720px 是中文长文比较舒服的阅读宽度 */
+.wrap--narrow {
+  max-width: 720px;
+}
+
+/* 页头：顶部留白 + 底部一条分隔线 + 左上角一团很淡的强调色光晕 */
+.post__head {
+  padding-block: 60px 40px;
+  border-bottom: 1px solid var(--line);
+  background:
+    radial-gradient(760px 320px at 8% -40%, var(--accent-soft), transparent 62%),
+    var(--bg);
+}
+
+.post__head-inner {
+  width: 100%;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* 页头与正文列严格对齐：同一套网格，页头内容只占第一列 */
+@media (min-width: 1080px) {
+  .post__head-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 720px) 200px;
+    column-gap: 56px;
+    row-gap: 0;
+    justify-content: center;
+  }
+
+  .post__head-inner > * {
+    grid-column: 1;
+  }
+}
+
+.post__head h1 {
+  font-size: clamp(1.7rem, 4.6vw, 2.3rem);
+  margin: 0;
+  letter-spacing: -0.028em;
+  line-height: 1.32;
+}
+
+/* 返回上一级的链接，页头页脚都用 */
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  margin-bottom: 30px;
+}
+
+.back:hover {
+  color: var(--accent);
+}
+
+/* 页头那行小字：分类 / 日期 / 阅读时长，或实验室的篇号 / 标签 / 更新时间 */
+.post__meta {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 0.73rem;
+  color: var(--fg-faint);
+  margin-bottom: 18px;
+}
+
+.post__dot {
+  color: var(--line-strong);
+}
+
+/* 标题下面那句概述，左侧一条强调色竖线 */
+.post__summary {
+  margin: 20px 0 0;
+  font-size: 0.95rem;
+  line-height: 1.85;
+  color: var(--fg-muted);
+  padding-left: 15px;
+  border-left: 2px solid var(--ember);
+}
+
+/* 正文外层。默认块级；1080px 以上切成「正文 + 右侧目录」两列 */
+.post__body {
+  display: block;
+}
+
+.post__main {
+  padding-block: 48px 72px;
+  margin-inline: 0;
+}
+
+@media (min-width: 1080px) {
+  .post__body {
+    display: grid;
+    grid-template-columns: minmax(0, 720px) 200px;
+    gap: 56px;
+    justify-content: center;
+    align-items: start;
+  }
+}
+
+/* 上一篇 / 下一篇：卡片式，鼠标移上去轻微上浮 */
+.pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding-block: 32px;
+  border-top: 1px solid var(--line);
+}
+
+.pager__item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+  color: var(--fg);
+  transition: all 0.2s ease;
+}
+
+.pager__item:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.pager__item--right {
+  text-align: right;
+}
+
+.pager__dir {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: var(--fg-faint);
+}
+
+.pager__title {
+  font-size: 0.93rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 560px) {
+  .pager {
+    grid-template-columns: 1fr;
+  }
+}
+
 .section--tight {
   padding-block: 64px;
 }

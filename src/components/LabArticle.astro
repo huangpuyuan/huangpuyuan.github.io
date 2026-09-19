@@ -1,0 +1,302 @@
+---
+/**
+ * LabArticle.astro —— 实验室讲解页的版式
+ *
+ * 这个组件的存在理由很简单：四个实验室板块（Python / Julia / ES6 / 数据结构）
+ * 的讲解页原本各带一份约 200 行、几乎逐字相同的 scoped style，而且版式和
+ * 博客文章页不一致——正文 1140px 通栏、没有阅读进度条、目录挤在正文上方。
+ *
+ * 所以这里直接照搬博客文章页的骨架（.post__head / .wrap--narrow / .post__body），
+ * 让两边的版式来自同一套 global.css。区别只在于数据：
+ *   - 博客有分类、同类文章，实验室有篇号、标签、异构的「行动卡片」
+ * 这些差异在调用处表达，组件保持通用。
+ *
+ * 关键点：最外层必须挂 data-article，ProgressBar 靠它定位正文高度。
+ * 漏了不会报错，进度条会静默地一直是 0——所以别删。
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ProgressBar from '../components/ProgressBar.astro';
+import ArticleToc from '../components/ArticleToc.astro';
+
+export interface LabLink {
+  href?: string;
+  /** 卡片顶部那行小标签，如「完整脚本」「演示页」「怎么运行」 */
+  kind: string;
+  /** 卡片正文描述 */
+  desc: string;
+  /** 渲染成不可点的说明卡（虚线边框）而不是链接 */
+  static?: boolean;
+  /** 需要内联代码样式时给纯文本，会渲染成 <code> */
+  code?: string;
+}
+
+interface Props {
+  title: string;
+  description: string;
+  /** 返回板块首页的链接，如 '/lab/python/' */
+  crumbHref: string;
+  /** 面包屑文字，如 'Python 学习笔记' */
+  crumbLabel: string;
+  /** 篇号行，如 'LAB / PYTHON / 03 OF 09' */
+  eyebrow: string;
+  /** 标题下那句概述 */
+  summary: string;
+  /** 加粗的一句话结论 */
+  gist?: string;
+  /** 页头小字，各页内容不同，用数组传省掉组件里的分支 */
+  metaFrom?: string[];
+  /** 额外的小标签（目前只有数据结构用它显示复杂度） */
+  chips?: string[];
+  toc: { depth: number; slug: string; text: string }[];
+  prev?: { href: string; title: string } | null;
+  next?: { href: string; title: string } | null;
+  backHref: string;
+  backLabel: string;
+  acts?: LabLink[];
+}
+
+const {
+  title,
+  description,
+  crumbHref,
+  crumbLabel,
+  eyebrow,
+  summary,
+  gist,
+  metaFrom = [],
+  chips = [],
+  toc,
+  prev,
+  next,
+  backHref,
+  backLabel,
+  acts = []
+}: Props = Astro.props;
+---
+
+<BaseLayout title={title} description={description} type="article">
+  <ProgressBar />
+
+  <article data-article>
+    <header class="post__head">
+      <div class="post__head-inner">
+        <a class="back" href={crumbHref}>
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+            <path d="M13 8H3M7 4L3 8l4 4"></path>
+          </svg>
+          {crumbLabel}
+        </a>
+
+        <div class="post__meta">
+          <span>{eyebrow}</span>
+          {
+            metaFrom.filter(Boolean).map((m) => (
+              <>
+                <span class="post__dot">·</span>
+                <span>{m}</span>
+              </>
+            ))
+          }
+        </div>
+
+        <h1>{title}</h1>
+        <p class="post__summary">{summary}</p>
+
+        {gist && <p class="meta__gist">{gist}</p>}
+
+        {
+          chips.length > 0 && (
+            <ul class="chips">
+              {chips.map((c) => (
+                <li>{c}</li>
+              ))}
+            </ul>
+          )
+        }
+      </div>
+    </header>
+
+    <div class="wrap post__body">
+      <div class="wrap--narrow post__main">
+        <div class="prose">
+          <slot />
+        </div>
+
+        {
+          acts.length > 0 && (
+            <div class="acts">
+              {acts.map((a) =>
+                a.static || !a.href ? (
+                  <div class="act act--static">
+                    <span class="act__k">{a.kind}</span>
+                    <span class="act__v">
+                      {a.desc}
+                      {a.code && (
+                        <>
+                          {' '}
+                          <code>{a.code}</code>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                ) : (
+                  <a class="act" href={a.href}>
+                    <span class="act__k">{a.kind}</span>
+                    <span class="act__v">{a.desc}</span>
+                  </a>
+                )
+              )}
+            </div>
+          )
+        }
+
+        <nav class="pager" aria-label="相邻篇目">
+          {
+            prev ? (
+              <a class="pager__item" href={prev.href}>
+                <span class="pager__dir">上一篇</span>
+                <span class="pager__title">{prev.title}</span>
+              </a>
+            ) : (
+              <span />
+            )
+          }
+          {
+            next ? (
+              <a class="pager__item pager__item--right" href={next.href}>
+                <span class="pager__dir">下一篇</span>
+                <span class="pager__title">{next.title}</span>
+              </a>
+            ) : (
+              <span />
+            )
+          }
+        </nav>
+
+        <p class="back back--foot">
+          <a class="more-link" href={backHref}>
+            <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+              <path d="M13 8H3M7 4L3 8l4 4"></path>
+            </svg>
+            {backLabel}
+          </a>
+        </p>
+      </div>
+
+      {
+        toc.length > 1 && (
+          <ArticleToc toc={toc} label="本篇内容" />
+        )
+      }
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  /* 页头那句加粗结论。博客没有这个，是实验室独有的 */
+  .meta__gist {
+    margin: 22px 0 0;
+    font-size: 1rem;
+    font-weight: 550;
+    letter-spacing: -0.01em;
+  }
+
+  /* 复杂度之类的小标签 */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    list-style: none;
+    margin: 18px 0 0;
+    padding: 0;
+  }
+
+  .chips li {
+    padding: 3px 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--bg-sunken);
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--fg-muted);
+  }
+
+  .acts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+    margin: 44px 0 0;
+  }
+
+  .act {
+    display: block;
+    padding: 16px 18px;
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    transition: border-color 0.18s ease, transform 0.18s ease;
+  }
+
+  a.act:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  .act--static {
+    background: transparent;
+    border-style: dashed;
+  }
+
+  .act__k {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .act__v {
+    display: block;
+    margin-top: 7px;
+    font-size: 0.86rem;
+    line-height: 1.6;
+    color: var(--fg-muted);
+    word-break: break-all;
+  }
+
+  /* 说明卡里的 <code> 由 Astro 在编译期渲染，能拿到 scoped 属性，不需要 :global */
+  .act__v code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    color: var(--fg);
+  }
+
+  /* 页脚那个返回链接。页头的 .back 自带 30px 下边距，这里要换掉 */
+  .back--foot {
+    margin: 32px 0 0;
+  }
+
+  .pager {
+    margin-top: 40px;
+  }
+
+  .more-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.86rem;
+    color: var(--fg-muted);
+    transition: color 0.18s ease;
+  }
+
+  .more-link:hover {
+    color: var(--accent);
+  }
+
+  @media (max-width: 640px) {
+    .acts {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

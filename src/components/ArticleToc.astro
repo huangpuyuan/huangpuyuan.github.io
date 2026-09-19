@@ -1,0 +1,135 @@
+---
+/**
+ * ArticleToc.astro —— 文章右侧的目录侧栏
+ *
+ * 博客和实验室讲解页共用这一个组件，好处是高亮逻辑只有一份，
+ * 不会出现「改了博客忘了改实验室」的漂移。
+ *
+ * 两个使用惯例（由调用方决定，组件不管）：
+ *   - 博客：headings 取 depth 2 和 3，length > 1 时渲染
+ *   - 实验室：只取 depth 2，length >= 3 时渲染
+ * 这是数据层的差异，所以判断留在各页面里。
+ *
+ * 样式说明：`.toc` 默认 display:none，1080px 以上才出现——窄屏没有空间放侧栏，
+ * 硬塞进去会挤掉正文。宽屏下的定位靠父级 `.post__body` 的 grid（在 global.css）。
+ */
+interface Props {
+  toc: { depth: number; slug: string; text: string }[];
+  label?: string;
+}
+
+/*
+ * 显式标注类型：Astro 的模板作用域拿不到 interface Props 的推断，
+ * 不写这行 astro check 会对 toc.map((h) => ...) 里的 h 报 7006（隐式 any）。
+ */
+const { toc, label = '目录' }: Props = Astro.props;
+---
+
+<aside class="toc" aria-label="文章目录">
+  <p class="toc__label">{label}</p>
+  <ul>
+    {
+      toc.map((h) => (
+        <li class={h.depth === 3 ? 'is-sub' : ''}>
+          <a href={`#${h.slug}`}>{h.text}</a>
+        </li>
+      ))
+    }
+  </ul>
+</aside>
+
+<script>
+  /* 上一次注册的滚动监听，视图过渡后用来摘掉自己，防止监听叠加 */
+  let prevHighlight: ((this: Window, ev: Event) => unknown) | null = null;
+
+  function initToc() {
+    const links = [...document.querySelectorAll<HTMLAnchorElement>('.toc a')];
+    if (!links.length) return;
+
+    const targets = links
+      .map((a) => {
+        const id = decodeURIComponent(a.getAttribute('href')!.slice(1));
+        const el = document.getElementById(id);
+        return el ? { a, el } : null;
+      })
+      .filter(Boolean) as { a: HTMLAnchorElement; el: HTMLElement }[];
+
+    if (!targets.length) return;
+
+    function highlight() {
+      let current = targets[0];
+      for (const t of targets) {
+        if (t.el.getBoundingClientRect().top <= 140) current = t;
+      }
+      targets.forEach((t) => t.a.classList.toggle('is-active', t.a === current.a));
+    }
+
+    // 视图过渡之后脚本会再跑一次，先把上一次的监听摘掉，避免叠加。
+    // 用模块级变量而不是 window 属性：省掉 declare global，也不污染全局。
+    window.removeEventListener('scroll', prevHighlight as EventListener);
+    prevHighlight = highlight;
+    window.addEventListener('scroll', highlight, { passive: true });
+    highlight();
+  }
+
+  document.addEventListener('astro:page-load', initToc);
+  initToc();
+</script>
+
+<style>
+  .toc {
+    display: none;
+  }
+
+  @media (min-width: 1080px) {
+    .toc {
+      display: block;
+      position: sticky;
+      top: calc(var(--nav-h) + 28px);
+      padding-top: 52px;
+      max-height: calc(100vh - var(--nav-h) - 56px);
+      overflow-y: auto;
+    }
+
+    .toc__label {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--fg-faint);
+      margin: 0 0 12px;
+    }
+
+    .toc ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      border-left: 1px solid var(--line);
+    }
+
+    .toc li a {
+      display: block;
+      font-size: 0.81rem;
+      line-height: 1.55;
+      color: var(--fg-faint);
+      padding: 5px 0 5px 13px;
+      border-left: 2px solid transparent;
+      margin-left: -1.5px;
+      transition: all 0.16s ease;
+    }
+
+    .toc li.is-sub a {
+      padding-left: 26px;
+      font-size: 0.78rem;
+    }
+
+    .toc li a:hover {
+      color: var(--fg);
+    }
+
+    .toc li a.is-active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+    }
+  }
+</style>

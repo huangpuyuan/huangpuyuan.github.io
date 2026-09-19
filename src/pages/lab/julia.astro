@@ -2,7 +2,8 @@
 import { statSync } from 'node:fs';
 import path from 'node:path';
 import { getCollection } from 'astro:content';
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import LabListPage from '../../components/LabListPage.astro';
+import type { LabSection } from '../../components/LabListPage.astro';
 
 const ROOT = path.join(process.cwd(), 'public', 'lab', 'julia');
 
@@ -33,240 +34,36 @@ function keep(list: Entry[]) {
 }
 
 const shownScripts = keep(scripts);
+
+/** 分区顺序：源码在前（这是这个板块最实在的东西），篇目在后 */
+const sections: LabSection[] = [
+  {
+    kind: 'mini',
+    title: '源码',
+    note: '直接点开是文本，浏览器会原样显示。想自己跑，先装 Julia，然后：<code>julia scripts/dice.jl</code>。',
+    links: shownScripts.map((s) => ({ href: `/lab/julia/${encodeURI(s.to)}`, title: s.title }))
+  },
+  {
+    kind: 'rows',
+    title: '按顺序读',
+    note: '从最简单的骰子开始，一路到性能实测。每篇都是独立的，想跳着看也行。',
+    links: guides.map((g, i) => ({
+      href: `/lab/julia/${g.id}/`,
+      no: pad(i + 1),
+      title: g.data.title,
+      note: g.data.gist ?? g.data.summary
+    }))
+  }
+];
 ---
 
-<BaseLayout
+<LabListPage
   title="Julia 统计模拟"
   description="2019 年学 Julia 时写的四个小脚本，用随机模拟去逼近一些算起来麻烦、但掷骰子就能出答案的问题。"
->
-  <div class="wrap page-head">
-    <span class="eyebrow">LAB / JULIA</span>
-    <h1>Julia 统计模拟</h1>
-    <p class="muted">
-      有一类问题公式推起来很麻烦，但<strong>用随机数掷很多次就能出答案</strong>。这类方法叫蒙特卡洛模拟，
-      代价是要跑很多次，所以特别挑语言性能——这正是 Julia 的用武之地。
-    </p>
-    <p class="muted">
-      下面这四个脚本是 2019 年 8 月学统计模拟时写的。浏览器跑不了 Julia，
-      所以这里做成了「代码 + 实测输出 + 讲解」的形式：每篇都写清楚在算什么、为什么这么写、以及跑出来什么结果。
-    </p>
-    <p class="muted">
-      代码按 Julia 1.x 重写过了——原版有几处用的是 0.6 时代的老写法，现在跑不起来。
-      顺带记下了踩过的坑，比如软作用域那条。
-    </p>
-  </div>
-
-  <div class="wrap" style="padding-bottom:96px">
-    <section class="block">
-      <h2 class="block__title">按顺序读</h2>
-      <p class="block__note">
-        从最简单的骰子开始，一路到性能实测。每篇都是独立的，想跳着看也行。
-      </p>
-      <ul class="rows">
-        {
-          guides.map((g, i) => (
-            <li>
-              <a class="row" href={`/lab/julia/${g.id}/`}>
-                <span class="row__no">{pad(i + 1)}</span>
-                <span class="row__title">{g.data.title}</span>
-                <span class="row__note">{g.data.gist ?? g.data.summary}</span>
-                <svg class="row__arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
-                  <path d="M5 11L11 5M6 5h5v5"></path>
-                </svg>
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </section>
-
-    <section class="block">
-      <h2 class="block__title">源码</h2>
-      <p class="block__note">
-        直接点开是文本，浏览器会原样显示。想自己跑，先装 Julia，然后：
-        <code>julia scripts/dice.jl</code>。
-      </p>
-      <ul class="mini">
-        {
-          shownScripts.map((s) => (
-            <li>
-              <a href={`/lab/julia/${encodeURI(s.to)}`}>
-                <span>{s.title}</span>
-                <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
-                  <path d="M5 11L11 5M6 5h5v5"></path>
-                </svg>
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </section>
-  </div>
-</BaseLayout>
-
-<style>
-  .page-head {
-    padding-block: 64px 20px;
-  }
-
-  .page-head h1 {
-    font-size: clamp(2.1rem, 6vw, 2.8rem);
-    margin: 0 0 12px;
-    letter-spacing: -0.035em;
-  }
-
-  .page-head p {
-    margin: 0 0 10px;
-    max-width: 46em;
-    font-size: 0.95rem;
-    line-height: 1.85;
-  }
-
-  .page-head strong {
-    font-weight: 550;
-  }
-
-  .page-head code,
-  .block__note code {
-    font-family: var(--font-mono);
-    font-size: 0.88em;
-    background: var(--bg-sunken);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    padding: 1px 6px;
-  }
-
-  .block + .block {
-    margin-top: 52px;
-    padding-top: 44px;
-    border-top: 1px solid var(--line);
-  }
-
-  .block__title {
-    margin: 0;
-    font-size: 1.2rem;
-    letter-spacing: -0.02em;
-  }
-
-  .block__note {
-    margin: 8px 0 20px;
-    max-width: 46em;
-    font-size: 0.87rem;
-    line-height: 1.8;
-    color: var(--fg-muted);
-  }
-
-  .rows {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .rows li + li {
-    border-top: 1px solid var(--line);
-  }
-
-  .row {
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
-    padding: 14px 12px;
-    margin-inline: -12px;
-    border-radius: var(--radius-sm);
-    color: var(--fg);
-    transition: background-color 0.18s ease;
-  }
-
-  .row:hover {
-    background: var(--bg-sunken);
-  }
-
-  .row__title {
-    flex-shrink: 0;
-    font-size: 0.95rem;
-    transition: color 0.18s ease;
-  }
-
-  .row__no {
-    flex-shrink: 0;
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    color: var(--fg-faint);
-  }
-
-  .row:hover .row__title {
-    color: var(--accent);
-  }
-
-  .row__note {
-    flex: 1;
-    min-width: 0;
-    font-size: 0.82rem;
-    color: var(--fg-faint);
-  }
-
-  .row__arrow {
-    flex-shrink: 0;
-    align-self: center;
-    color: var(--fg-faint);
-    transition: color 0.18s ease, transform 0.18s ease;
-  }
-
-  .row:hover .row__arrow {
-    color: var(--accent);
-    transform: translate(2px, -2px);
-  }
-
-  .mini {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 2px;
-  }
-
-  .mini a {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 7px 12px;
-    margin-inline: -12px;
-    border-radius: var(--radius-sm);
-    font-family: var(--font-mono);
-    font-size: 0.84rem;
-    line-height: 1.45;
-    color: var(--fg-muted);
-    transition: all 0.16s ease;
-  }
-
-  .mini a svg {
-    flex-shrink: 0;
-    color: var(--fg-faint);
-    opacity: 0;
-    transition: all 0.16s ease;
-  }
-
-  .mini a:hover {
-    background: var(--bg-sunken);
-    color: var(--accent);
-  }
-
-  .mini a:hover svg {
-    opacity: 1;
-    color: var(--accent);
-  }
-
-  @media (min-width: 640px) {
-    .mini {
-      grid-template-columns: repeat(2, 1fr);
-      column-gap: 32px;
-    }
-  }
-
-  @media (max-width: 640px) {
-    .row__note {
-      display: none;
-    }
-  }
-</style>
+  eyebrow="LAB / JULIA"
+  intro={[
+    '有一类问题公式推起来很麻烦，但<strong>用随机数掷很多次就能出答案</strong>。这类方法叫蒙特卡洛模拟，代价是要跑很多次，所以特别挑语言性能——这正是 Julia 的用武之地。',
+    '下面这四个脚本是 2019 年 8 月学统计模拟时写的。浏览器跑不了 Julia，所以这里做成了「代码 + 实测输出 + 讲解」的形式：每篇都写清楚在算什么、为什么这么写、以及跑出来什么结果。代码按 Julia 1.x 重写过了——原版有几处用的是 0.6 时代的老写法，现在跑不起来。'
+  ]}
+  sections={sections}
+/>
