@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
+import { unified } from '@astrojs/markdown-remark';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 
@@ -19,18 +20,23 @@ export default defineConfig({
     defaultStrategy: 'viewport'
   },
   markdown: {
-    remarkPlugins: [remarkMath],
-    rehypePlugins: [
-      [
-        rehypeKatex,
-        {
-          // 老笔记里的公式写法不完全规范，容错处理，不要在构建时报警
-          strict: false,
-          throwOnError: false,
-          trust: false
-        }
+    // Astro 7 默认改用 Sätteri 处理器，不再内置 remark/rehype 管线。
+    // 老笔记里的数学公式依赖 remark-math + rehype-katex，所以这里显式
+    // 切回 unified 处理器（需要 @astrojs/markdown-remark 这个包）。
+    processor: unified({
+      remarkPlugins: [remarkMath],
+      rehypePlugins: [
+        [
+          rehypeKatex,
+          {
+            // 老笔记里的公式写法不完全规范，容错处理，不要在构建时报警
+            strict: false,
+            throwOnError: false,
+            trust: false
+          }
+        ]
       ]
-    ],
+    }),
     shikiConfig: {
       theme: 'github-light',
       wrap: true
