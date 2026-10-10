@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ProgressBar from '../../components/ProgressBar.astro';
+import ArchiveNote from '../../components/ArchiveNote.astro';
 import ArticleToc from '../../components/ArticleToc.astro';
 import { formatDateCN, readingTime, postUrl, tagUrl } from '../../utils/format';
 
@@ -66,6 +67,7 @@ const category = post.data.category?.trim() || '随笔';
     <div class="wrap post__body">
       <div class="wrap--narrow post__main">
         <div class="prose">
+          {post.data.date < new Date('2024-01-01') && <ArchiveNote date={post.data.date} />}
           <Content />
         </div>
 
@@ -156,3 +158,4 @@ const category = post.data.category?.trim() || '随笔';
     color: var(--accent);
   }
 </style>
+
