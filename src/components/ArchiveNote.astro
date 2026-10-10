@@ -1,0 +1,24 @@
+---
+// 旧笔记归档横幅：给 2019 年前的学习笔记加一行提示
+// 用法：在 blog/[...slug].astro 文章模板正文前插入：
+//   {post.data.date < new Date('2024-01-01') && <ArchiveNote date={post.data.date} />}
+// 需在 frontmatter 里 import ArchiveNote from '../../components/ArchiveNote.astro';
+interface Props { date: Date }
+const { date } = Astro.props;
+const year = date.getFullYear();
+---
+<aside class="archive-note">
+  写于 {year}，学习时期的存档笔记，观点与工具链以当时为准。
+</aside>
+
+<style>
+  .archive-note {
+    margin: 0 0 1.5rem;
+    padding: 0.6rem 1rem;
+    border-left: 3px solid var(--accent, #888);
+    background: color-mix(in srgb, var(--accent, #888) 8%, transparent);
+    font-size: 0.875rem;
+    opacity: 0.85;
+    border-radius: 0 4px 4px 0;
+  }
+</style>
