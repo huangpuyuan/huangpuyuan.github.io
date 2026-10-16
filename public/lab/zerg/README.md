@@ -2,7 +2,7 @@
 
 RESTful API 设计练习项目（2017-04），基于 ThinkPHP 5.0。
 
-对应笔记：[RESTful API 设计落地：错误码体系与异常分层](/posts/restful-api-design)。
+对应笔记：[RESTful API 设计落地：错误码体系与异常分层](/blog/restful-api-design)。
 
 ## 目录
 
