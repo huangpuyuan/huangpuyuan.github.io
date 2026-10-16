@@ -2,7 +2,7 @@
 
 TypeScript 入门练习代码（2017-03）。
 
-对应笔记：[TypeScript 入门：字符串、参数与析构表达式](/posts/typescript-intro)。
+对应笔记：[TypeScript 入门：字符串、参数与析构表达式](/blog/typescript-intro)。
 
 ## 文件
 
