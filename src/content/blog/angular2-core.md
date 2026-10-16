@@ -11,7 +11,7 @@ draft: false
 
 ## 背景
 
-2017 年初，Angular 刚发布 2.x 重写版，把 1.x 的 `$scope` / digest cycle 那套换成了 **组件 + 模块 + 依赖注入** 的新骨架。我之前写过 AngularJS（见[另一篇 Digest Cycle 笔记](/posts/angularjs-digest-cycle)），所以学 Angular 2 的过程更像"同一个框架换了副身体"。
+2017 年初，Angular 刚发布 2.x 重写版，把 1.x 的 `$scope` / digest cycle 那套换成了 **组件 + 模块 + 依赖注入** 的新骨架。我之前写过 AngularJS（见[另一篇 Digest Cycle 笔记](/blog/angularjs-digest-cycle)），所以学 Angular 2 的过程更像"同一个框架换了副身体"。
 
 那时候 `@angular/cli` 还在 `@angular-cli` 的早期版本，`ng new` 出来的项目结构就是 `src/app/` 下一堆组件。下面三部分都是那段时间的实战记录。
 
