@@ -2,7 +2,7 @@
 
 JavaScript 进阶练习（2017-05），含原始笔记与练习代码。
 
-对应笔记：[JavaScript 进阶：变量作用域、内存与调试](/posts/js-in-depth)。
+对应笔记：[JavaScript 进阶：变量作用域、内存与调试](/blog/js-in-depth)。
 
 ## 目录
 
