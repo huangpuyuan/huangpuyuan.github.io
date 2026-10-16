@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Function</title>
+</head>
+
+<body>
+    <script>
+    function add(n1, n2) {
+        return n1 + n2;
+    }
+    add.sex = 'male';
+    add.setSex = function(sex) {
+        this.sex = sex;
+    }
+
+    console.log(add.sex);
+    console.log(add.setSex('female'));
+    console.log(add.sex);
+
+    console.log(add(1, 2));
+
+    var person = {};
+    var add = function() {
+            return 1;
+        }
+        //add();
+    console.log(add());
+    console.log(add);
+
+    setTimeout(fn, 1000);
+
+    function fn() {
+        console.log(1);
+    };
+
+    // 作为返回值
+
+    function fn() {
+        return function() {
+            console.log(1);
+        };
+    }
+
+    // var newFn= fn();
+    // newFn();
+
+    fn()(); //1
+
+    // function add(){
+    // 	console.log(1);
+    // }
+
+
+    // var add = function(){
+    // 	console.log(1);
+    // }();
+
+    // (function(){
+    // 	console.log(1);
+    // })()
+
+    // +function(){
+    // 	console.log(1);
+    // }()
+
+    console.log(function() {
+        console.log(123);
+    }());
+
+
+    function factorial(num) {
+        if (num <= 1) return 1;
+        return num * factorial(num - 1);
+    }
+    console.log(factorial(5));
+
+
+    var operation = {
+        add: function(num1, num2) {
+            return num1 + num2;
+        },
+        subtract: function(num1, num2) {
+            return num1 - num2;
+        },
+        '@': function() {
+            console.log('@')
+        }
+    }
+
+    console.log(operation.add(1, 2));
+    operation.add(1, 2);
+
+    var key = 'add';
+    operation['@']();
+    //[]里面可以传多种字符串	
+    console.log(operation[key](2, 2));
+
+
+
+    document.onclick = function() {
+        console.log('你点击了文档');
+    };
+
+    // 链式调用
+
+
+    //函数的间接调用
+
+    var name = 'xm';
+    var person = {};
+    person.name = 'xh';
+    person.getName = function() {
+        return this.name;
+    };
+
+    console.log(person.getName());
+    console.log(person.getName.call(window));
+    console.log(person.getName.apply(window));
+
+
+    function add(num1, num2) {
+        return num1 + num2;
+    }
+
+    console.log(add(1, 2));
+    var datas = [1, 2];
+    console.log(add.call(window, 1, 2));
+    console.log(add.apply(window, datas));
+
+
+    // 1.实参 == 形参
+    // 2.实参 < 形参
+    //可选参数
+
+    function pow(base, power) {
+        power = power || 2;
+        return Math.pow(base, power);
+    }
+
+    console.log(pow(3, 2));
+    console.log(pow(3, 3));
+    console.log(pow(8));
+
+    function myAdd() {
+        var len = arguments.length;
+        if (len == 0) return;
+        var sum = 0;
+        for (var i = 0; i < len; i++) {
+            sum += arguments[i];
+        }
+        return sum;
+    }
+    myAdd();
+    myAdd(1,2,3);
+    myAdd(4,5,5,2,2,3,2,2,2,2);
+
+    </script>
+</body>
+
+</html>
