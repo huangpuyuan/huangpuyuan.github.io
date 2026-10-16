@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>查漏补缺</title>
+</head>
+<button>1</button>
+<button>2</button>
+<button>3</button>
+
+<body>
+    <script>
+    //交换值不用第三个变量
+    // var a = 3,
+    //     b = 4;
+    // /*此处写代码*/
+    // a = a + b;
+    // b = a - b;
+    // a = a - b;
+    // console.log(a,b);
+
+    //比较引用类型的值
+    function equalObj(a, b) {
+        for (var p in a) {
+            if (a[p] !== b[p]) return false;
+        }
+        return true;
+    }
+
+    function equalArrays(a, b) {
+        if (a.length !== b.length) return false;
+        for (var i = 0; i < a.length; i++) {
+            if (a[i] !== b[i]) return false;
+        }
+    }
+
+    // 复制变量的值
+
+    // 浅拷贝
+    function copyObj(obj) {
+        var newObj = {};
+        for (var p in obj) {
+            newObj[p] = obj[p];
+        }
+        return newObj;
+    }
+
+    //深拷贝jquery里面的$.extend方法进行深拷贝
+
+    function setName(obj) {
+        return obj.name = 'xm';
+    }
+
+    var person = {};
+    setName(person);
+    console.log(person.name);
+
+    // document.write(typeof x);
+
+    var a = {name: 'xm'}, b = [4];
+	/*此处添加代码*/
+	a={a,b};
+	b=a.a;
+	a=a.b;
+	console.log(a,b)
+
+	// 变量对象
+
+	// var name = 'xm';
+	// function fn(argument){
+	// 	var sex = 'male';
+	// 	function fn2(argument){
+	// 		var age = 18;
+		
+	// 	}
+	// }
+
+	//	console.log(fn);
+	
+	var btns = document.getElementsByTagName('button');
+
+	function alertFn(i){
+		btns[i].onclick = function(){
+			alert(i+1);
+		};
+	}
+
+     for (var i = 0; i < 3; i++) {
+       	alertFn(i);
+   	}
+
+   	//js预解析
+	</script>
+</body>
+
+</html>
