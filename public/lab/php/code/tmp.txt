@@ -1,0 +1,18 @@
+Array
+(
+    [ID] => 01
+    [NAME] => kobe
+    [AGE] => 22
+)
+Array
+(
+    [ID] => 02
+    [NAME] => james
+    [AGE] => 12
+)
+Array
+(
+    [ID] => 03
+    [NAME] => jordan
+    [AGE] => 32
+)
