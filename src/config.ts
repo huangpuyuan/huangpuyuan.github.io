@@ -150,11 +150,15 @@ export const labs = [
   }
 ] as const;
 
-/** 更早期的练习，以 issue 形式散落在仓库里 */
+/** 更早期的练习，已整理成笔记归档 */
 export const earlyNotes = [
-  { title: 'JavaScript Without Loops', href: 'https://github.com/huangpuyuan/myExercises-FrontEnd/issues/1' },
-  { title: '学会使用 Angular 2', href: 'https://github.com/huangpuyuan/Angular2Action/issues/1' },
-  { title: 'RESTful API 设计指南', href: 'https://github.com/huangpuyuan/restfulAPI/issues/1' }
+  { title: 'PHP SPL 标准库', href: '/blog/php-spl-standard-library/' },
+  { title: 'AngularJS 脏检查机制', href: '/blog/angularjs-digest-cycle/' },
+  { title: 'AngularJS 单页应用', href: '/blog/angularjs-spa-notes/' },
+  { title: 'TypeScript 入门', href: '/blog/typescript-intro/' },
+  { title: 'Angular 2 核心三件套', href: '/blog/angular2-core/' },
+  { title: 'RESTful API 设计落地', href: '/blog/restful-api-design/' },
+  { title: 'JavaScript 进阶', href: '/blog/js-in-depth/' }
 ] as const;
 
 /** 读诗板块 */
