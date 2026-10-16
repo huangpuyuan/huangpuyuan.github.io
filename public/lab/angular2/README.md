@@ -2,7 +2,7 @@
 
 Angular 2 练习代码（2017-03 ~ 2017-04），来自三个项目：`DI-Angular`、`router-Angular`、`Angular2Action`。
 
-对应笔记：[Angular 2 核心三件套：依赖注入、路由与组件通讯](/posts/angular2-core)。
+对应笔记：[Angular 2 核心三件套：依赖注入、路由与组件通讯](/blog/angular2-core)。
 
 ## 目录
 
